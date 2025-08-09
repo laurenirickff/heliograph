@@ -122,10 +122,14 @@
   }
   body {
     @apply bg-background text-foreground;
-    /* Subtle solar accents for light mode */
-    background-image:
-      radial-gradient(900px 600px at 15% -10%, rgba(184, 131, 31, 0.12) 0%, rgba(184, 131, 31, 0) 60%),
-      radial-gradient(700px 500px at 110% 110%, rgba(22, 158, 144, 0.10) 0%, rgba(22, 158, 144, 0) 55%);
+    /* Subtle solar accent for light mode (single gradient to avoid banding/seams) */
+    background-image: radial-gradient(
+      900px 600px at 15% -10%,
+      rgba(184, 131, 31, 0.08) 0%,
+      rgba(184, 131, 31, 0.03) 35%,
+      rgba(184, 131, 31, 0) 72%
+    );
+    background-repeat: no-repeat;
   }
 }
 
@@ -133,7 +137,9 @@
 .dark body {
   background-image: radial-gradient(
     1200px 800px at 20% -10%,
-    #101828 0%,
-    rgba(16, 24, 40, 0) 60%
+    rgba(16, 24, 40, 1) 0%,
+    rgba(16, 24, 40, 0.8) 30%,
+    rgba(16, 24, 40, 0.0) 70%
   );
+  background-repeat: no-repeat;
 }
