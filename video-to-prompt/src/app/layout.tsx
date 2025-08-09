@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VideoToPrompt",
-  description: "Transform video walkthroughs into structured prompts for automation agents.",
+  title: "Heliograph",
+  description: "Heliograph turns workflow videos into clean, agent-ready prompts.",
 };
 
 export default function RootLayout({

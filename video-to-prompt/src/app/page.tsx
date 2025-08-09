@@ -43,7 +43,7 @@ export default function Home() {
   return (
     <div className="container mx-auto p-8 max-w-4xl">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">VideoToPrompt</h1>
+        <h1 className="text-2xl font-semibold">Heliograph</h1>
         <ThemeToggle />
       </div>
 

@@ -1,4 +1,4 @@
-VideoToPrompt turns narrated workflow videos into ready‑to‑use prompts using a simple, preset‑driven flow.
+Heliograph turns narrated workflow videos into ready‑to‑use prompts using a simple, preset‑driven flow.
 
 ## Setup
 
