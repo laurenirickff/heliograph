@@ -122,6 +122,14 @@
   }
   body {
     @apply bg-background text-foreground;
-    background-image: radial-gradient(1200px 800px at 20% -10%, #101828 0%, rgba(16,24,40,0) 60%);
   }
+}
+
+/* Apply subtle solar gradient only in dark mode */
+.dark body {
+  background-image: radial-gradient(
+    1200px 800px at 20% -10%,
+    #101828 0%,
+    rgba(16, 24, 40, 0) 60%
+  );
 }
