@@ -9,6 +9,7 @@ import { ControlsSimple } from "@/components/controls-simple";
 import { EffectivePreview } from "@/components/effective-preview";
 import { getPresetText } from "@/lib/presets";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SolarCorner } from "@/components/solar-corner";
 
 export default function Home() {
   const [template, setTemplate] = useState<"browser-use" | "airtop">("browser-use");
@@ -42,6 +43,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-8 max-w-4xl">
+      <SolarCorner />
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Heliograph</h1>
         <ThemeToggle />

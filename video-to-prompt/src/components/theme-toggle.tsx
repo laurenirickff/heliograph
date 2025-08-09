@@ -9,6 +9,8 @@ function applyTheme(next: "light" | "dark") {
   else root.classList.remove("dark");
   try {
     localStorage.setItem("theme", next);
+    // notify decorative components
+    window.dispatchEvent(new Event("theme-toggle"));
   } catch {}
 }
 
