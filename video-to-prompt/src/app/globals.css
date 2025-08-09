@@ -122,6 +122,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Subtle solar accents for light mode */
+    background-image:
+      radial-gradient(900px 600px at 15% -10%, rgba(184, 131, 31, 0.12) 0%, rgba(184, 131, 31, 0) 60%),
+      radial-gradient(700px 500px at 110% 110%, rgba(22, 158, 144, 0.10) 0%, rgba(22, 158, 144, 0) 55%);
   }
 }
 
