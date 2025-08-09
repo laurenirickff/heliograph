@@ -142,4 +142,5 @@
     rgba(16, 24, 40, 0.0) 70%
   );
   background-repeat: no-repeat;
+  background-attachment: fixed; /* prevent gradient scroll-induced seams */
 }

@@ -63,16 +63,17 @@ export function SolarCorner() {
           height: 200px;
           pointer-events: none;
           z-index: 0;
+          overflow: hidden; /* prevent moon from sweeping across the page */
         }
         .solar-corner .moon {
           position: absolute;
           top: 40px;
-          left: -200px; /* start off-screen left */
+          left: -180px; /* start mostly off-corner */
           width: 160px;
           height: 160px;
           border-radius: 50%;
           background: radial-gradient(60% 60% at 50% 50%, #0A0E17 0%, #0A0E17 100%);
-          opacity: 0.98;
+          opacity: 0.9;
           filter: drop-shadow(0 0 12px rgba(0,0,0,0.35));
         }
         .solar-corner.eclipse .moon {
@@ -80,8 +81,8 @@ export function SolarCorner() {
         }
         @keyframes eclipse-move {
           0% { transform: translateX(0); }
-          50% { transform: translateX(220px); }
-          100% { transform: translateX(440px); }
+          50% { transform: translateX(180px); }
+          100% { transform: translateX(360px); }
         }
         /* Mode-specific visibility */
         :global(.dark) .solar-corner .sun-core { opacity: 0.12; }
