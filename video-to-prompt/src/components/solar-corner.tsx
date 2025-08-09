@@ -67,7 +67,7 @@ export function SolarCorner() {
         <g className="sun">
           <circle className="sun-glow" cx="80" cy="80" r="90" fill="url(#sunGlow)" />
           <circle className="sun-core" cx="80" cy="80" r="50" fill="url(#sunCore)" />
-          <circle className="sun-corona" cx="80" cy="80" r="56" fill="none" stroke="#E9B949" strokeOpacity="0.6" strokeWidth="6" />
+          <circle className="sun-corona" cx="80" cy="80" r="56" fill="none" stroke="#E9B949" strokeOpacity="0.5" strokeWidth="4" />
         </g>
 
         {/* Moon group sits above the sun and clearly occludes it */}
@@ -95,14 +95,18 @@ export function SolarCorner() {
         }
         .svg-root { display: block; }
         /* Animation: moon travels left->right across the sun within the corner */
+        .moon-group { opacity: 0; }
         .eclipse .moon-group {
-          animation: moon-sweep 1.15s ease-in-out both;
-          transform: translateX(-60px);
+          animation: moon-sweep 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+          will-change: transform, opacity;
         }
+        /* Inspired by slide/fade patterns from Tailwind animation galleries */
         @keyframes moon-sweep {
-          0%   { transform: translateX(-60px); }
-          50%  { transform: translateX(80px); }
-          100% { transform: translateX(220px); }
+          0%   { opacity: 0; transform: translateX(-110px) scale(1); }
+          30%  { opacity: 1; transform: translateX(-40px) scale(1.01); }
+          55%  { opacity: 1; transform: translateX(60px) scale(1.02); }
+          80%  { opacity: 0.9; transform: translateX(150px) scale(1.0); }
+          100% { opacity: 0; transform: translateX(220px) scale(0.99); }
         }
         /* Dark mode styling: emphasize corona, use dark moon fill */
         :global(.dark) .solar-corner .sun-core { opacity: 0.12; }

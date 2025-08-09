@@ -130,6 +130,7 @@
       rgba(184, 131, 31, 0) 72%
     );
     background-repeat: no-repeat;
+  background-attachment: fixed;
   }
 }
 
