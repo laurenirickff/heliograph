@@ -1,5 +1,0 @@
-feat: wire advanced options into extraction prompt
-
-- Append guided option directives to extraction prompts (both strict and flex)
-- In strict mode, allow custom prompt preamble then enforce schema with default strict prompt
-- Preserve previous responses (raw + compat) for non-normalized mode
