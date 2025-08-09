@@ -49,6 +49,20 @@ export default function Home() {
         <ThemeToggle />
       </div>
 
+      {/* Tagline: Transform sun to morse code -> video to prompts */}
+      <div className="mb-8">
+        <div className="inline-flex items-center gap-2 rounded-xl border bg-card/70 px-3 py-1.5 text-foreground/80 shadow-sm ring-1 ring-inset ring-ring/10 backdrop-blur-sm">
+          <span className="text-xs uppercase tracking-wider">Transform</span>
+          <span className="text-sm">
+            <span className="line-through decoration-foreground/40 decoration-2">sun</span>
+            <span className="mx-1 font-medium">video</span>
+            <span className="mx-1">to</span>
+            <span className="line-through decoration-foreground/40 decoration-2">morse code</span>
+            <span className="mx-1 font-medium">prompts</span>
+          </span>
+        </div>
+      </div>
+
       <div className="mb-6 space-y-4">
         <TemplateSelector
           value={template}
