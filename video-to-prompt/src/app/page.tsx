@@ -7,8 +7,9 @@ import { ProcessingView } from "@/components/processing-view";
 import { PromptOutput } from "@/components/prompt-output";
 import { TemplateSelector } from "@/components/template-selector";
 import { ControlsSimple } from "@/components/controls-simple";
-import { EffectivePreview } from "@/components/effective-preview";
 import { getPresetText } from "@/lib/presets";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SolarCorner } from "@/components/solar-corner";
 
@@ -19,6 +20,7 @@ export default function Home() {
   const [state, setState] = useState<"idle" | "uploading" | "processing" | "complete">("idle");
   const [prompt, setPrompt] = useState("");
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleUpload = async (file: File) => {
     setState("uploading");
@@ -45,9 +47,9 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-8 pt-2 pb-8">
+    <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-4 pb-12 relative z-10">
       <SolarCorner />
-      <div className="relative mb-4 mt-8 md:mt-10">
+      <div className="relative mb-4 mt-8 md:mt-10 pl-[max(14rem,calc(var(--solar-anchor-x)+72px))] xl:pl-0">
         <div className="absolute right-0 top-0">
           <ThemeToggle />
         </div>
@@ -59,32 +61,74 @@ export default function Home() {
       </div>
 
       {/* Tagline: strong, simple subhead under title (no lines) */}
-      <div className="mb-8">
+      <div className="mb-8 pl-[max(14rem,calc(var(--solar-anchor-x)+72px))] xl:pl-0">
         <p className="mt-1 text-[clamp(16px,1.8vw,20px)] font-semibold tracking-tight leading-snug text-[#B8831F] dark:text-[#F1C453] opacity-80">
           Transform videos to prompts
         </p>
       </div>
 
-      <div className="mb-6 space-y-4">
-        <TemplateSelector
-          value={template}
-          onChange={(t) => {
-            // Update template first, then seed prompt only if user hasn't edited or when switching presets
-            setTemplate(t);
-            setPromptText(getPresetText(t));
-          }}
-        />
-        <ControlsSimple initialPrompt={promptText} onChange={({ promptText }) => setPromptText(promptText)} />
-        <EffectivePreview promptText={promptText} />
-      </div>
-
-      {state === "idle" && <UploadZone onUpload={handleUpload} />}
-      {state === "processing" && <ProcessingView />}
-      {state === "complete" && (
-        <div className="w-full space-y-4">
-          <PromptOutput prompt={prompt} />
-        </div>
+      {/* Steps: vertically stacked full-width */}
+      {state === "idle" && (
+        <Card className="p-4 w-full relative z-10">
+          <div className="space-y-1">
+            <div>
+              <h2 className="text-base font-medium">Step 1: Upload your video</h2>
+              <p className="text-sm leading-snug text-muted-foreground">Add a short recording of the workflow you want to turn into a prompt.</p>
+            </div>
+            <UploadZone onSelect={setSelectedFile} showActionButton={false} />
+          </div>
+        </Card>
       )}
+
+      <Card className="p-4 w-full mt-6 relative z-10">
+        <div className="space-y-1">
+          <div>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-medium">Step 2: Prompt</h2>
+              <TemplateSelector
+                inline
+                label="Template"
+                value={template}
+                onChange={(t) => {
+                  // Update template first, then seed prompt only if user hasn't edited or when switching presets
+                  setTemplate(t);
+                  setPromptText(getPresetText(t));
+                }}
+              />
+            </div>
+            <p className="text-sm leading-snug text-muted-foreground">Pick a template and adjust the prompt as needed.</p>
+          </div>
+          <ControlsSimple
+            showLabel={false}
+            initialPrompt={promptText}
+            onChange={({ promptText }) => setPromptText(promptText)}
+          />
+        </div>
+      </Card>
+
+      {state === "idle" && (
+        <Card className="p-4 w-full mt-6 relative z-10">
+          <div className="mb-3">
+            <h2 className="text-base font-medium">Step 3: Generate your result</h2>
+            <p className="text-sm text-muted-foreground">We’ll process the video and return a ready-to-use prompt you can copy.</p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={() => selectedFile && handleUpload(selectedFile)} disabled={!selectedFile}>
+              Generate Prompt
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Processing / Output occupy full width below steps */}
+      <div className="mt-6">
+        {state === "processing" && <ProcessingView />}
+        {state === "complete" && (
+          <div className="w-full space-y-4">
+            <PromptOutput prompt={prompt} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

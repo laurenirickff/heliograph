@@ -6,7 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 type Props = {
-  onUpload: (file: File) => void;
+  onUpload?: (file: File) => void;
+  onSelect?: (file: File) => void;
+  showActionButton?: boolean;
 };
 
 const ACCEPTED = {
@@ -15,7 +17,7 @@ const ACCEPTED = {
   "video/webm": [".webm"],
 };
 
-export function UploadZone({ onUpload }: Props) {
+export function UploadZone({ onUpload, onSelect, showActionButton = true }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<File | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
@@ -30,6 +32,7 @@ export function UploadZone({ onUpload }: Props) {
       return;
     }
     setSelected(file);
+    if (onSelect) onSelect(file);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -83,11 +86,13 @@ export function UploadZone({ onUpload }: Props) {
           {error && <div className="mt-2 text-red-500 text-sm">{error}</div>}
         </div>
       </Card>
-      <div className="mt-4 flex justify-end">
-        <Button onClick={() => selected && onUpload(selected)} disabled={!selected}>
-          Upload & Analyze
-        </Button>
-      </div>
+      {showActionButton && (
+        <div className="mt-4 flex justify-end">
+          <Button onClick={() => selected && onUpload && onUpload(selected)} disabled={!selected || !onUpload}>
+            Upload & Analyze
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

@@ -233,7 +233,7 @@ export function SolarCorner() {
           width: 360px; /* 20% larger than previous 300 */
           height: 360px;
           pointer-events: none;
-          z-index: 1; /* ensure the corner SVG sits above the backdrop */
+          z-index: 0; /* above page backgrounds; below content wrapper */
           /* Allow the moon to travel beyond the corner without being clipped */
           overflow: visible;
           /* Orbit geometry variables (sun at 80,80; orbit center at 0,0) */
@@ -249,7 +249,7 @@ export function SolarCorner() {
           position: fixed;
           inset: 0;
           pointer-events: none;
-          z-index: 0;
+          z-index: 0; /* above body/html background but below content wrapper */
           background-image:
             radial-gradient(
               farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
