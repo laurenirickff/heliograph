@@ -45,7 +45,7 @@ export function ThemeToggle() {
     const root = document.documentElement;
     if (!prefersReduced) {
       root.classList.add("theme-animating");
-      // Remove after 500ms + small buffer
+      // Remove after 550ms to cover single-frame scheduling jitter
       window.setTimeout(() => root.classList.remove("theme-animating"), 550);
     }
 
