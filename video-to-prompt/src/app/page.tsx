@@ -16,7 +16,12 @@ import { SolarCorner } from "@/components/solar-corner";
 const fraunces = Fraunces({ subsets: ["latin"], weight: ["600", "700"], display: "swap" });
 
 export default function Home() {
-  const [template, setTemplate] = useState<"browser-use" | "airtop">("browser-use");
+  const [template, setTemplate] = useState<
+    | "browser-use"
+    | "browser-use-shadowing"
+    | "browser-use-discovery"
+    | "airtop"
+  >("browser-use");
   const [state, setState] = useState<"idle" | "uploading" | "processing" | "complete">("idle");
   const [prompt, setPrompt] = useState("");
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
@@ -47,7 +52,7 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-4 pb-12 relative z-10">
+      <div className="mx-auto w-full max-w-[min(1800px,calc(100vw-4rem))] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-4 pb-12 relative z-10">
       <SolarCorner />
       <div className="relative mb-4 mt-8 md:mt-10 pl-[max(14rem,calc(var(--solar-anchor-x)+72px))] xl:pl-0">
         <div className="absolute right-0 top-0">

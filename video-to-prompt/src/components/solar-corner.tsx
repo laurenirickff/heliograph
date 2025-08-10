@@ -19,7 +19,6 @@ export function SolarCorner() {
   const cornerRef = useRef<HTMLDivElement | null>(null);
   const animTimerRef = useRef<number | null>(null);
   const orbitRef = useRef<SVGGElement | null>(null);
-  const groupRef = useRef<SVGGElement | null>(null);
   const orbitEndHandlerRef = useRef<((e: TransitionEvent) => void) | null>(null);
 
   useEffect(() => {
@@ -98,7 +97,7 @@ export function SolarCorner() {
         animTimerRef.current = null;
       }
       if (orbitEndHandlerRef.current) {
-        orbitRef.current?.removeEventListener("transitionend", orbitEndHandlerRef.current as any);
+        orbitRef.current?.removeEventListener("transitionend", orbitEndHandlerRef.current as EventListener);
         orbitEndHandlerRef.current = null;
       }
 
@@ -141,7 +140,7 @@ export function SolarCorner() {
         const onOrbitEnd = (e: TransitionEvent) => {
           if (e.propertyName !== "transform") return;
           // Ensure this handler runs once per exit
-          orbitRef.current?.removeEventListener("transitionend", onOrbitEnd as any);
+          orbitRef.current?.removeEventListener("transitionend", onOrbitEnd as EventListener);
           orbitEndHandlerRef.current = null;
           // Keep hidden during reset
           setDarkActive(false);
@@ -158,7 +157,7 @@ export function SolarCorner() {
           animTimerRef.current = afterFade;
         };
         orbitEndHandlerRef.current = onOrbitEnd;
-        orbitRef.current?.addEventListener("transitionend", onOrbitEnd as any, { once: true });
+        orbitRef.current?.addEventListener("transitionend", onOrbitEnd as EventListener, { once: true });
       }
     };
 
@@ -232,6 +231,9 @@ export function SolarCorner() {
           left: -60px;
           width: 360px; /* 20% larger than previous 300 */
           height: 360px;
+          /* Scale down overall size ~15% without altering internal geometry */
+          transform-origin: top left;
+          transform: scale(0.85);
           pointer-events: none;
           z-index: 0; /* above page backgrounds; below content wrapper */
           /* Allow the moon to travel beyond the corner without being clipped */
