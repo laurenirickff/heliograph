@@ -117,7 +117,7 @@ export function SolarCorner() {
         setDarkActive(true); // ensure visible immediately
         requestAnimationFrame(() => {
           // 1st frame: enable duration
-          setVar("--orbit-dur", "2s");
+          setVar("--orbit-dur", "0.5s");
           // Force a reflow to ensure the browser commits the duration change
           // before we change the angle, so the transform transition runs.
           void orbitRef.current?.getBoundingClientRect();
@@ -125,17 +125,17 @@ export function SolarCorner() {
             // 2nd frame: rotate to 45deg (clockwise)
             setVar("--orbit-angle", "45deg");
             // Restore fade duration for subsequent ops
-            requestAnimationFrame(() => setVar("--fade-dur", "0.75s"));
+            requestAnimationFrame(() => setVar("--fade-dur", "0.5s"));
           });
         });
         // End of enter animation: clear the in-phase after the orbit duration
         animTimerRef.current = window.setTimeout(() => {
           setAnimPhase("idle");
-        }, 2100);
+        }, 550);
       } else {
         // Leaving dark: continue clockwise to left, then hide and reset
         setAnimPhase("out");
-        setVar("--orbit-dur", "1.8s");
+        setVar("--orbit-dur", "0.5s");
         setVar("--orbit-angle", "180deg");
         // After transform completes, hide, then reset angle invisibly
         const onOrbitEnd = (e: TransitionEvent) => {
@@ -151,10 +151,10 @@ export function SolarCorner() {
             setVar("--orbit-angle", "0deg");
             // Re-enable duration and leave the out phase on next frame
             requestAnimationFrame(() => {
-              setVar("--orbit-dur", "1.8s");
+              setVar("--orbit-dur", "0.5s");
               setAnimPhase("idle");
             });
-          }, 1900);
+          }, 520);
           animTimerRef.current = afterFade;
         };
         orbitEndHandlerRef.current = onOrbitEnd;
@@ -217,7 +217,14 @@ export function SolarCorner() {
         <g className="moon-group" aria-hidden>
           <g className="moon-orbit" ref={orbitRef}>
             <g className="moon-inner" transform="translate(169.71, 0)" style={{ mixBlendMode: "normal" }}>
-              <circle className="moon" cx="0" cy="0" r="56" shapeRendering="geometricPrecision" />
+              <circle
+                className="moon"
+                cx="0"
+                cy="0"
+                r="56"
+                shapeRendering="geometricPrecision"
+                style={{ fill: "#000000" }}
+              />
             </g>
           </g>
         </g>
@@ -231,7 +238,7 @@ export function SolarCorner() {
           width: 240px;
           height: 240px;
           pointer-events: none;
-          z-index: 0;
+          z-index: 1; /* ensure the corner SVG sits above the backdrop */
           /* Allow the moon to travel beyond the corner without being clipped */
           overflow: visible;
           /* Orbit geometry variables (sun at 80,80; orbit center at 0,0) */
@@ -295,7 +302,7 @@ export function SolarCorner() {
           transform: rotate(var(--orbit-angle, 0deg)) translateZ(0);
           will-change: transform;
           /* Smooth orbit: gentle ease-in-out (S-curve) for natural motion */
-          transition: transform var(--orbit-dur, 1.8s) cubic-bezier(0.45, 0, 0.55, 1);
+          transition: transform var(--orbit-dur, 0.5s) cubic-bezier(0.45, 0, 0.55, 1);
         }
         /* No fade — moon remains opaque during motion */
         .moon-group { transition: none; }
@@ -306,7 +313,7 @@ export function SolarCorner() {
         :global(.dark) .solar-corner .sun-core { opacity: 0.10; }
         :global(.dark) .solar-corner .sun-glow { opacity: 0.12; }
         :global(.dark) .solar-corner .sun-corona { opacity: 0.72; }
-        .solar-corner .moon { fill: rgb(var(--umbra-rgb)); stroke: #F1C453; stroke-opacity: 0.16; stroke-width: 1px; }
+        .solar-corner .moon { fill: #000000; stroke: #F1C453; stroke-opacity: 0.16; stroke-width: 1px; }
         /* Keep moon opaque/dark at all times (no tonal change during motion) */
         /* Stylized moon surface and rim */
         .moon-crater {

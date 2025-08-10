@@ -33,8 +33,22 @@ export function ThemeToggle() {
   }, []);
 
   const onToggle = () => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
+
+    // Add a temporary class to synchronize global CSS transitions
+    const root = document.documentElement;
+    if (!prefersReduced) {
+      root.classList.add("theme-animating");
+      // Remove after 500ms + small buffer
+      window.setTimeout(() => root.classList.remove("theme-animating"), 550);
+    }
+
     applyTheme(next);
   };
 
