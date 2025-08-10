@@ -278,7 +278,7 @@
       farthest-corner circle at 0% 100%,
       rgba(0, 0, 0, 0) 40%,
       rgba(122, 96, 56, 0.18) 100%
-    );
+    ) !important;
 }
 
 :root.theme-to-light html {
@@ -330,5 +330,5 @@
       farthest-corner circle at 0% 100%,
       rgba(0, 0, 0, 0) 28%,
       rgba(var(--umbra-rgb), 0.46) 100%
-    );
+    ) !important;
 }
