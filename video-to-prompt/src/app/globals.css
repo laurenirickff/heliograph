@@ -332,3 +332,29 @@
       rgba(var(--umbra-rgb), 0.46) 100%
     ) !important;
 }
+
+/* Freeze select trigger background and prompt scrollbar tones during overlap delay
+   so they remain visually in the previous theme until the delayed transition begins. */
+/* Light -> Dark: keep previous (light) visuals */
+:root.theme-to-dark [data-slot='select-trigger'] {
+  background-color: transparent !important;
+}
+:root.theme-to-dark .prompt-editor-textarea {
+  /* Light theme scrollbar colors */
+  scrollbar-color: #D8E0EE transparent !important; /* matches light --border */
+}
+:root.theme-to-dark .prompt-editor-textarea::-webkit-scrollbar-thumb {
+  background-color: #D8E0EE !important; /* matches light --border */
+}
+
+/* Dark -> Light: keep previous (dark) visuals */
+:root.theme-to-light [data-slot='select-trigger'] {
+  background-color: rgba(27, 39, 64, 0.30) !important; /* matches dark bg-input/30 */
+}
+:root.theme-to-light .prompt-editor-textarea {
+  /* Dark theme scrollbar colors */
+  scrollbar-color: #1B2740 transparent !important; /* matches dark --border */
+}
+:root.theme-to-light .prompt-editor-textarea::-webkit-scrollbar-thumb {
+  background-color: #1B2740 !important; /* matches dark --border */
+}
