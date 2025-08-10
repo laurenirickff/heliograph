@@ -333,28 +333,34 @@
     ) !important;
 }
 
-/* Freeze select trigger background and prompt scrollbar tones during overlap delay
-   so they remain visually in the previous theme until the delayed transition begins. */
-/* Light -> Dark: keep previous (light) visuals */
+/* Freeze select trigger and Step 2 scrollbar tones during the overlap delay
+   so they remain in the previous theme until the delayed transition begins. */
+/* Light -> Dark: keep previous (light) visuals during delay */
 :root.theme-to-dark [data-slot='select-trigger'] {
   background-color: transparent !important;
+  border-color: #D8E0EE !important; /* light --border */
 }
-:root.theme-to-dark .prompt-editor-textarea {
-  /* Light theme scrollbar colors */
-  scrollbar-color: #D8E0EE transparent !important; /* matches light --border */
+:root.theme-to-dark #prompt-editor-textarea {
+  scrollbar-color: #D8E0EE transparent !important; /* light --border */
 }
-:root.theme-to-dark .prompt-editor-textarea::-webkit-scrollbar-thumb {
-  background-color: #D8E0EE !important; /* matches light --border */
+:root.theme-to-dark #prompt-editor-textarea::-webkit-scrollbar-thumb {
+  background-color: #D8E0EE !important; /* light --border */
+}
+:root.theme-to-dark #prompt-editor-textarea::-webkit-scrollbar-track {
+  background: transparent !important;
 }
 
-/* Dark -> Light: keep previous (dark) visuals */
+/* Dark -> Light: keep previous (dark) visuals during delay */
 :root.theme-to-light [data-slot='select-trigger'] {
-  background-color: rgba(27, 39, 64, 0.30) !important; /* matches dark bg-input/30 */
+  background-color: rgba(27, 39, 64, 0.30) !important; /* dark bg-input/30 */
+  border-color: #1B2740 !important; /* dark --border */
 }
-:root.theme-to-light .prompt-editor-textarea {
-  /* Dark theme scrollbar colors */
-  scrollbar-color: #1B2740 transparent !important; /* matches dark --border */
+:root.theme-to-light #prompt-editor-textarea {
+  scrollbar-color: #1B2740 transparent !important; /* dark --border */
 }
-:root.theme-to-light .prompt-editor-textarea::-webkit-scrollbar-thumb {
-  background-color: #1B2740 !important; /* matches dark --border */
+:root.theme-to-light #prompt-editor-textarea::-webkit-scrollbar-thumb {
+  background-color: #1B2740 !important; /* dark --border */
+}
+:root.theme-to-light #prompt-editor-textarea::-webkit-scrollbar-track {
+  background: transparent !important;
 }
