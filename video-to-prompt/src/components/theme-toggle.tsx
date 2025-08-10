@@ -44,9 +44,23 @@ export function ThemeToggle() {
     // Add a temporary class to synchronize global CSS transitions
     const root = document.documentElement;
     if (!prefersReduced) {
-      root.classList.add("theme-animating");
-      // Remove after 550ms to cover single-frame scheduling jitter
-      window.setTimeout(() => root.classList.remove("theme-animating"), 550);
+      // Configure overlap-based timing
+      if (next === "dark") {
+        // Light -> Dark: wait for first contact (~240ms), then darken over ~260ms
+        root.style.setProperty("--theme-delay", "240ms");
+        root.style.setProperty("--theme-duration", "260ms");
+        // Lifetime covers delay+duration plus small buffer
+        const lifetime = 240 + 260 + 60; // ms
+        root.classList.add("theme-animating");
+        window.setTimeout(() => root.classList.remove("theme-animating"), lifetime);
+      } else {
+        // Dark -> Light: sun reappears quickly (~140ms), lighten over ~250ms
+        root.style.setProperty("--theme-delay", "140ms");
+        root.style.setProperty("--theme-duration", "250ms");
+        const lifetime = 140 + 250 + 60; // ms
+        root.classList.add("theme-animating");
+        window.setTimeout(() => root.classList.remove("theme-animating"), lifetime);
+      }
     }
 
     applyTheme(next);

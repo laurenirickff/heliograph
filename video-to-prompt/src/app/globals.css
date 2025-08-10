@@ -128,7 +128,11 @@
   /* Smooth global color transitions when toggling theme */
   :root.theme-animating *,
   :root.theme-animating {
-    transition: color 0.55s ease, background-color 0.55s ease, border-color 0.55s ease, box-shadow-color 0.55s ease;
+    transition:
+      color var(--theme-duration, 0.5s) ease var(--theme-delay, 0ms),
+      background-color var(--theme-duration, 0.5s) ease var(--theme-delay, 0ms),
+      border-color var(--theme-duration, 0.5s) ease var(--theme-delay, 0ms),
+      box-shadow-color var(--theme-duration, 0.5s) ease var(--theme-delay, 0ms);
   }
   html, body {
     /* Ensure the painting area equals the viewport for full-page gradients */
