@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
  * Solar corner accent with persistent eclipse behavior in dark mode.
  *
  * - Light mode: sun visible, no moon.
- * - Dark mode: moon covers the sun and remains (eclipse + visible corona).
+ * - Dark mode: moon covers the sun and remains.
  * - Transition to dark: moon orbits in along an arc from top-right to cover.
  * - Transition to light: moon departs along the same arc and hides.
  * - Respects reduced motion.
@@ -176,7 +176,7 @@ export function SolarCorner() {
     >
       {/* Full-viewport solar backdrop anchored to the sun's position via portal to avoid clipping */}
       {mounted && createPortal(<div className="solar-backdrop" />, document.body)}
-      <svg width="300" height="300" viewBox="0 0 240 240" className="svg-root" style={{ overflow: "visible" }}>
+      <svg width="360" height="360" viewBox="0 0 240 240" className="svg-root" style={{ overflow: "visible" }}>
         <defs>
           {/* Sun */}
           <radialGradient id="sunGlow" cx="35%" cy="35%" r="70%">
@@ -205,15 +205,10 @@ export function SolarCorner() {
         {/* Layer 1: Sun backdrop and core (below moon) */}
         <g className="sun">
           <circle className="sun-glow" cx="120" cy="120" r="95" fill="url(#sunGlow)" />
-          <circle className="sun-core" cx="120" cy="120" r="52" fill="url(#sunCore)" />
+          {/* Slightly larger than moon to yield a subtle rim */}
+          <circle className="sun-core" cx="120" cy="120" r="57" fill="url(#sunCore)" />
         </g>
-
-        {/* Layer 2: Corona ring overlay (visible in dark mode only) — draw BELOW moon so the moon fully occludes */}
-        <g className="corona-overlay">
-          <circle className="sun-corona" cx="120" cy="120" r="56" fill="none" stroke="#E9B949" strokeOpacity="0.58" strokeWidth="5" />
-        </g>
-
-        {/* Layer 3: Moon occluder moves along a circular orbit to cover the sun — drawn ABOVE corona/sun */}
+        {/* Layer 2: Moon occluder moves along a circular orbit to cover the sun */}
         <g className="moon-group" aria-hidden>
           <g className="moon-orbit" ref={orbitRef}>
             <g className="moon-inner" transform="translate(169.71, 0)" style={{ mixBlendMode: "normal" }}>
@@ -233,10 +228,10 @@ export function SolarCorner() {
       <style jsx>{`
         .solar-corner {
           position: fixed;
-          top: -68px; /* nudge further so larger sun still reads as corner accent */
-          left: -68px;
-          width: 300px; /* 25% larger than 240 */
-          height: 300px;
+          top: -60px; /* add a touch more in-page padding */
+          left: -60px;
+          width: 360px; /* 20% larger than previous 300 */
+          height: 360px;
           pointer-events: none;
           z-index: 1; /* ensure the corner SVG sits above the backdrop */
           /* Allow the moon to travel beyond the corner without being clipped */
@@ -306,11 +301,7 @@ export function SolarCorner() {
         }
         /* No fade — moon remains opaque during motion */
         .moon-group { transition: none; }
-        /* Corona ring visibility: hidden by default; shown when the moon is active.
-           Delay its appearance during anim-in so the sun remains unchanged until first contact. */
-        .corona-overlay { opacity: 0; transition: opacity 220ms ease-in-out 0ms; }
-        .solar-corner.dark-active .corona-overlay { opacity: 1; }
-        .solar-corner.anim-in .corona-overlay { transition-delay: 240ms; }
+        
         /* Keep the sun's core appearance constant across themes */
         .solar-corner .moon { fill: #000000; stroke: #F1C453; stroke-opacity: 0.16; stroke-width: 1px; }
         /* Keep moon opaque/dark at all times (no tonal change during motion) */
