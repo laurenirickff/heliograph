@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /**
@@ -16,6 +16,11 @@ export function SolarCorner() {
   const [darkActive, setDarkActive] = useState(false);
   const [animPhase, setAnimPhase] = useState<"idle" | "in" | "out">("idle");
   const [mounted, setMounted] = useState(false);
+  const cornerRef = useRef<HTMLDivElement | null>(null);
+  const animTimerRef = useRef<number | null>(null);
+  const orbitRef = useRef<SVGGElement | null>(null);
+  const groupRef = useRef<SVGGElement | null>(null);
+  const orbitEndHandlerRef = useRef<((e: TransitionEvent) => void) | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -49,7 +54,18 @@ export function SolarCorner() {
   useEffect(() => {
     // Initialize from current theme (avoids FOUC/mismatch)
     const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
-    setDarkActive(isDark);
+    const setVar = (name: string, value: string) => {
+      if (cornerRef.current) cornerRef.current.style.setProperty(name, value);
+    };
+    // Snap to initial state without animation
+    setVar("--orbit-dur", "0s");
+    if (isDark) {
+      setVar("--orbit-angle", "45deg");
+      setDarkActive(true);
+    } else {
+      setVar("--orbit-angle", "0deg");
+      setDarkActive(false);
+    }
 
     const onToggle = () => {
       const prefersReduced =
@@ -61,31 +77,88 @@ export function SolarCorner() {
 
       if (prefersReduced) {
         // Jump to final state without animation
+        const setVar = (name: string, value: string) => {
+          if (cornerRef.current) cornerRef.current.style.setProperty(name, value);
+        };
+        setVar("--orbit-dur", "0s");
         if (nowDark) {
+          setVar("--orbit-angle", "45deg");
           setDarkActive(true);
         } else {
+          setVar("--orbit-angle", "0deg");
           setDarkActive(false);
         }
         setAnimPhase("idle");
         return;
       }
 
+      // Clear any in-flight animation timer and transition listener
+      if (animTimerRef.current !== null) {
+        clearTimeout(animTimerRef.current);
+        animTimerRef.current = null;
+      }
+      if (orbitEndHandlerRef.current) {
+        orbitRef.current?.removeEventListener("transitionend", orbitEndHandlerRef.current as any);
+        orbitEndHandlerRef.current = null;
+      }
+
+      const setVar = (name: string, value: string) => {
+        if (cornerRef.current) cornerRef.current.style.setProperty(name, value);
+      };
+
       if (nowDark) {
-        // Entering dark: prime transition, then move to eclipse position next frame
+        // Entering dark: snap to right (0deg), make moon visible without fade,
+        // then enable duration and rotate to 45deg in a separate frame so the
+        // transform transition is guaranteed to fire.
         setAnimPhase("in");
+        setVar("--fade-dur", "0s");
+        setVar("--orbit-dur", "0s");
+        setVar("--orbit-angle", "0deg");
+        setDarkActive(true); // ensure visible immediately
         requestAnimationFrame(() => {
-          setDarkActive(true);
+          // 1st frame: enable duration
+          setVar("--orbit-dur", "0.75s");
+          // Force a reflow to ensure the browser commits the duration change
+          // before we change the angle, so the transform transition runs.
+          void orbitRef.current?.getBoundingClientRect();
+          requestAnimationFrame(() => {
+            // 2nd frame: rotate to 45deg (clockwise)
+            setVar("--orbit-angle", "45deg");
+            // Restore fade duration for subsequent ops
+            requestAnimationFrame(() => setVar("--fade-dur", "0.75s"));
+          });
         });
-        const id = setTimeout(() => setAnimPhase("idle"), 850);
-        return () => clearTimeout(id);
+        // End of enter animation: clear the in-phase after the orbit duration
+        animTimerRef.current = window.setTimeout(() => {
+          setAnimPhase("idle");
+        }, 800);
       } else {
-        // Leaving dark: move away next frame, then clear anim flag
+        // Leaving dark: continue clockwise to left, then hide and reset
         setAnimPhase("out");
-        requestAnimationFrame(() => {
+        setVar("--orbit-dur", "0.75s");
+        setVar("--orbit-angle", "180deg");
+        // After transform completes, hide, then reset angle invisibly
+        const onOrbitEnd = (e: TransitionEvent) => {
+          if (e.propertyName !== "transform") return;
+          // Ensure this handler runs once per exit
+          orbitRef.current?.removeEventListener("transitionend", onOrbitEnd as any);
+          orbitEndHandlerRef.current = null;
+          // Keep hidden during reset
           setDarkActive(false);
-        });
-        const id = setTimeout(() => setAnimPhase("idle"), 850);
-        return () => clearTimeout(id);
+          // Reset angle without animation while still in anim-out (fully hidden)
+          const afterFade = window.setTimeout(() => {
+            setVar("--orbit-dur", "0s");
+            setVar("--orbit-angle", "0deg");
+            // Re-enable duration and leave the out phase on next frame
+            requestAnimationFrame(() => {
+              setVar("--orbit-dur", "0.75s");
+              setAnimPhase("idle");
+            });
+          }, 800);
+          animTimerRef.current = afterFade;
+        };
+        orbitEndHandlerRef.current = onOrbitEnd;
+        orbitRef.current?.addEventListener("transitionend", onOrbitEnd as any, { once: true });
       }
     };
 
@@ -98,6 +171,7 @@ export function SolarCorner() {
       className={`solar-corner${darkActive ? " dark-active" : ""}${
         animPhase === "in" ? " anim-in" : animPhase === "out" ? " anim-out" : ""
       }`}
+      ref={cornerRef}
       aria-hidden="true"
     >
       {/* Full-viewport solar backdrop anchored to the sun's position via portal to avoid clipping */}
@@ -119,6 +193,12 @@ export function SolarCorner() {
             <stop offset="0%" stopColor="#0F1624" />
             <stop offset="100%" stopColor="#0A0E17" />
           </radialGradient>
+          {/* Bright/white moon used while the moon is moving (entering/leaving) */}
+          <radialGradient id="moonFillLight" cx="50%" cy="42%" r="62%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
+            <stop offset="45%" stopColor="#EEF3FF" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#D9E2F2" stopOpacity="0.92" />
+          </radialGradient>
           {/* Soft shadow to simulate penumbra on the sun */}
           <filter id="moonShadow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
@@ -135,7 +215,7 @@ export function SolarCorner() {
 
         {/* Layer 2: Moon occluder moves along a circular orbit to cover the sun */}
         <g className="moon-group" aria-hidden>
-          <g className="moon-orbit">
+          <g className="moon-orbit" ref={orbitRef}>
             <g className="moon-inner" transform="translate(169.71, 0)">
               <circle className="moon" cx="0" cy="0" r="56" filter="url(#moonShadow)" fill="url(#moonFillDark)" />
             </g>
@@ -214,13 +294,11 @@ export function SolarCorner() {
         /* Smooth circular motion: rotate the orbit group around (0,0) */
         .moon-orbit {
           transform-origin: 0px 0px;
-          transform: rotate(0deg) translateZ(0);
+          transform: rotate(var(--orbit-angle, 0deg)) translateZ(0);
           will-change: transform;
-          transition: transform var(--dur) cubic-bezier(0.22, 1, 0.36, 1);
+          transition: transform var(--orbit-dur, 0.75s) cubic-bezier(0.22, 1, 0.36, 1);
         }
-        .dark-active .moon-orbit { transform: rotate(45deg) translateZ(0); }
-        .moon-group { transition: opacity var(--dur) ease-in-out; }
-        .anim-out .moon-group { opacity: 0; }
+        .moon-group { transition: opacity var(--fade-dur, 0.75s) ease-in-out; }
         /* Corona ring visible only in dark mode */
         .corona-overlay { opacity: 0; transition: opacity 220ms ease-in-out; }
         :global(.dark) .solar-corner .corona-overlay { opacity: 1; }
@@ -228,7 +306,25 @@ export function SolarCorner() {
         :global(.dark) .solar-corner .sun-core { opacity: 0.12; }
         :global(.dark) .solar-corner .sun-glow { opacity: 0.15; }
         :global(.dark) .solar-corner .sun-corona { opacity: 0.85; }
-        :global(.dark) .solar-corner .moon { fill: url(#moonFillDark); }
+        :global(.dark) .solar-corner .moon { fill: url(#moonFillDark); stroke: #E9B949; stroke-opacity: 0.18; stroke-width: 1px; }
+        /* During motion, render the moon bright/white to contrast the travel
+           path and feel illuminated (uses subtle cool tint). */
+        .solar-corner.anim-in .moon {
+          fill: url(#moonFillLight);
+          stroke: #ffffff;
+          stroke-opacity: 0.28;
+          stroke-width: 1px;
+        }
+        /* Stylized moon surface and rim */
+        .moon-crater {
+          fill: rgba(255, 255, 255, 0.07);
+          stroke: rgba(0, 0, 0, 0.18);
+          stroke-width: 0.5px;
+        }
+        .moon::after { opacity: 0.8; }
+        /* During the exit (light) reset window, keep the moon fully transparent
+           so any instant-reset is visually suppressed. */
+        .anim-out .moon-group { opacity: 0; }
       `}</style>
     </div>
   );
