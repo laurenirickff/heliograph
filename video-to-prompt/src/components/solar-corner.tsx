@@ -107,15 +107,15 @@ export function SolarCorner() {
       };
 
       if (nowDark) {
-        // Entering dark: snap to right (0deg), make moon visible without fade,
-        // then enable duration and rotate to 45deg in a separate frame so the
-        // transform transition is guaranteed to fire.
+        // Entering dark: set to an off-screen angle (-30deg) first so the moon
+        // starts outside the viewport, then reveal and animate to 45deg.
         setAnimPhase("in");
         setVar("--fade-dur", "0s");
         setVar("--orbit-dur", "0s");
-        setVar("--orbit-angle", "0deg");
-        setDarkActive(true); // ensure visible immediately
+        setVar("--orbit-angle", "-30deg");
+        // Make the moon visible on the next frame so the off-screen angle is committed
         requestAnimationFrame(() => {
+          setDarkActive(true);
           // 1st frame: enable duration
           setVar("--orbit-dur", "0.5s");
           // Force a reflow to ensure the browser commits the duration change
