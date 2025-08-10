@@ -306,13 +306,12 @@ export function SolarCorner() {
         }
         /* No fade — moon remains opaque during motion */
         .moon-group { transition: none; }
-        /* Corona ring visible only in dark mode */
-        .corona-overlay { opacity: 0; transition: opacity 220ms ease-in-out; }
-        :global(.dark) .solar-corner .corona-overlay { opacity: 1; }
-        /* Dark mode styling: emphasize corona, use dark moon fill */
-        :global(.dark) .solar-corner .sun-core { opacity: 0.10; }
-        :global(.dark) .solar-corner .sun-glow { opacity: 0.12; }
-        :global(.dark) .solar-corner .sun-corona { opacity: 0.72; }
+        /* Corona ring visibility: hidden by default; shown when the moon is active.
+           Delay its appearance during anim-in so the sun remains unchanged until first contact. */
+        .corona-overlay { opacity: 0; transition: opacity 220ms ease-in-out 0ms; }
+        .solar-corner.dark-active .corona-overlay { opacity: 1; }
+        .solar-corner.anim-in .corona-overlay { transition-delay: 240ms; }
+        /* Keep the sun's core appearance constant across themes */
         .solar-corner .moon { fill: #000000; stroke: #F1C453; stroke-opacity: 0.16; stroke-width: 1px; }
         /* Keep moon opaque/dark at all times (no tonal change during motion) */
         /* Stylized moon surface and rim */
