@@ -45,6 +45,9 @@
 
 :root {
   --radius: 0.625rem;
+  /* Dynamic solar anchor populated by `SolarCorner` at runtime */
+  --solar-anchor-x: 132px;
+  --solar-anchor-y: 132px;
   /* Light mode (elegant, solar-inspired) */
   --background: #F7F8FB;
   --foreground: #0B1220;
@@ -120,28 +123,91 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html, body {
+    /* Ensure the painting area equals the viewport for full-page gradients */
+    min-height: 100vh;
+  }
+  html {
+    /* Paint the solar glow at the viewport layer as well (some browsers clip
+       body backgrounds to content height). */
+    background-image:
+      radial-gradient(
+        farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+        rgba(184, 131, 31, 0.34) 0%,
+        rgba(184, 131, 31, 0.22) 22%,
+        rgba(184, 131, 31, 0.10) 48%,
+        rgba(184, 131, 31, 0.04) 72%,
+        rgba(184, 131, 31, 0) 100%
+      ),
+      radial-gradient(
+        farthest-corner circle at 0% 100%,
+        rgba(0, 0, 0, 0) 40%,
+        rgba(0, 0, 0, 0.16) 100%
+      );
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
   body {
     @apply bg-background text-foreground;
-    /* Subtle solar accent for light mode (single gradient to avoid banding/seams) */
-    background-image: radial-gradient(
-      900px 600px at 15% -10%,
-      rgba(184, 131, 31, 0.08) 0%,
-      rgba(184, 131, 31, 0.03) 35%,
-      rgba(184, 131, 31, 0) 72%
-    );
+    /* Page-wide solar glow + bottom-left vignette for clear full-viewport falloff. */
+    background-image:
+      radial-gradient(
+        farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+        rgba(184, 131, 31, 0.34) 0%,
+        rgba(184, 131, 31, 0.22) 22%,
+        rgba(184, 131, 31, 0.10) 48%,
+        rgba(184, 131, 31, 0.04) 72%,
+        rgba(184, 131, 31, 0) 100%
+      ),
+      radial-gradient(
+        farthest-corner circle at 0% 100%,
+        rgba(0, 0, 0, 0) 40%,
+        rgba(0, 0, 0, 0.16) 100%
+      );
     background-repeat: no-repeat;
   background-attachment: fixed;
   }
 }
 
 /* Apply subtle solar gradient only in dark mode */
+.dark html {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(233, 185, 73, 0.30) 0%,
+      rgba(233, 185, 73, 0.16) 20%,
+      rgba(233, 185, 73, 0.08) 42%,
+      rgba(233, 185, 73, 0.03) 68%,
+      rgba(233, 185, 73, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 35%,
+      rgba(0, 0, 0, 0.28) 100%
+    );
+  background-repeat: no-repeat;
+  background-attachment: fixed; /* prevent gradient scroll-induced seams */
+}
+
 .dark body {
-  background-image: radial-gradient(
-    1200px 800px at 20% -10%,
-    rgba(16, 24, 40, 1) 0%,
-    rgba(16, 24, 40, 0.8) 30%,
-    rgba(16, 24, 40, 0.0) 70%
-  );
+  /* Dark mode: stronger luminous falloff from the sun, plus a gentle
+     vignette toward the bottom-left so the furthest-away area is the
+     darkest. Stacked backgrounds: gold glow on top, subtle dark vignette
+     beneath. */
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(233, 185, 73, 0.30) 0%,
+      rgba(233, 185, 73, 0.16) 20%,
+      rgba(233, 185, 73, 0.08) 42%,
+      rgba(233, 185, 73, 0.03) 68%,
+      rgba(233, 185, 73, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 35%,
+      rgba(0, 0, 0, 0.28) 100%
+    );
   background-repeat: no-repeat;
   background-attachment: fixed; /* prevent gradient scroll-induced seams */
 }
