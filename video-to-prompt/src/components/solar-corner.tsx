@@ -117,7 +117,7 @@ export function SolarCorner() {
         setDarkActive(true); // ensure visible immediately
         requestAnimationFrame(() => {
           // 1st frame: enable duration
-          setVar("--orbit-dur", "0.75s");
+          setVar("--orbit-dur", "2s");
           // Force a reflow to ensure the browser commits the duration change
           // before we change the angle, so the transform transition runs.
           void orbitRef.current?.getBoundingClientRect();
@@ -131,11 +131,11 @@ export function SolarCorner() {
         // End of enter animation: clear the in-phase after the orbit duration
         animTimerRef.current = window.setTimeout(() => {
           setAnimPhase("idle");
-        }, 800);
+        }, 2100);
       } else {
         // Leaving dark: continue clockwise to left, then hide and reset
         setAnimPhase("out");
-        setVar("--orbit-dur", "0.75s");
+        setVar("--orbit-dur", "1.8s");
         setVar("--orbit-angle", "180deg");
         // After transform completes, hide, then reset angle invisibly
         const onOrbitEnd = (e: TransitionEvent) => {
@@ -151,10 +151,10 @@ export function SolarCorner() {
             setVar("--orbit-angle", "0deg");
             // Re-enable duration and leave the out phase on next frame
             requestAnimationFrame(() => {
-              setVar("--orbit-dur", "0.75s");
+              setVar("--orbit-dur", "1.8s");
               setAnimPhase("idle");
             });
-          }, 800);
+          }, 1900);
           animTimerRef.current = afterFade;
         };
         orbitEndHandlerRef.current = onOrbitEnd;
@@ -176,7 +176,7 @@ export function SolarCorner() {
     >
       {/* Full-viewport solar backdrop anchored to the sun's position via portal to avoid clipping */}
       {mounted && createPortal(<div className="solar-backdrop" />, document.body)}
-      <svg width="240" height="240" viewBox="0 0 240 240" className="svg-root">
+      <svg width="240" height="240" viewBox="0 0 240 240" className="svg-root" style={{ overflow: "visible" }}>
         <defs>
           {/* Sun */}
           <radialGradient id="sunGlow" cx="35%" cy="35%" r="70%">
@@ -188,22 +188,17 @@ export function SolarCorner() {
             <stop offset="0%" stopColor="#FFE5A8" />
             <stop offset="100%" stopColor="#E9B949" />
           </radialGradient>
-          {/* Moon */}
-          <radialGradient id="moonFillDark" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor="#0F1624" />
-            <stop offset="100%" stopColor="#0A0E17" />
-          </radialGradient>
-          {/* Bright/white moon used while the moon is moving (entering/leaving) */}
-          <radialGradient id="moonFillLight" cx="50%" cy="42%" r="62%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
-            <stop offset="45%" stopColor="#EEF3FF" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#D9E2F2" stopOpacity="0.92" />
-          </radialGradient>
-          {/* Soft shadow to simulate penumbra on the sun */}
+          {/* Moon uses a constant umbra tone (matches dark gradient's lightest tone) */}
+          {/* Removed bright moving fill; moon remains dark/opaque at all times */}
+          {/* Soft shadow to simulate penumbra — merge with SourceGraphic so the moon stays fully opaque */}
           <filter id="moonShadow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur" />
-            <feOffset dx="1" dy="1" result="off" />
-            <feColorMatrix in="off" type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0   0 0 0 0.22 0" />
+            <feOffset in="blur" dx="1" dy="1" result="off" />
+            <feColorMatrix in="off" type="matrix" values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0   0 0 0 0.22 0" result="shadow" />
+            <feMerge>
+              <feMergeNode in="shadow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
         </defs>
 
@@ -213,18 +208,18 @@ export function SolarCorner() {
           <circle className="sun-core" cx="120" cy="120" r="52" fill="url(#sunCore)" />
         </g>
 
-        {/* Layer 2: Moon occluder moves along a circular orbit to cover the sun */}
-        <g className="moon-group" aria-hidden>
-          <g className="moon-orbit" ref={orbitRef}>
-            <g className="moon-inner" transform="translate(169.71, 0)">
-              <circle className="moon" cx="0" cy="0" r="56" filter="url(#moonShadow)" fill="url(#moonFillDark)" />
-            </g>
-          </g>
-        </g>
-
-        {/* Layer 3: Corona ring overlay (visible in dark mode only) */}
+        {/* Layer 2: Corona ring overlay (visible in dark mode only) — draw BELOW moon so the moon fully occludes */}
         <g className="corona-overlay">
           <circle className="sun-corona" cx="120" cy="120" r="56" fill="none" stroke="#E9B949" strokeOpacity="0.58" strokeWidth="5" />
+        </g>
+
+        {/* Layer 3: Moon occluder moves along a circular orbit to cover the sun — drawn ABOVE corona/sun */}
+        <g className="moon-group" aria-hidden>
+          <g className="moon-orbit" ref={orbitRef}>
+            <g className="moon-inner" transform="translate(169.71, 0)" style={{ mixBlendMode: "normal" }}>
+              <circle className="moon" cx="0" cy="0" r="56" shapeRendering="geometricPrecision" />
+            </g>
+          </g>
         </g>
       </svg>
 
@@ -237,14 +232,15 @@ export function SolarCorner() {
           height: 240px;
           pointer-events: none;
           z-index: 0;
-          overflow: hidden;
+          /* Allow the moon to travel beyond the corner without being clipped */
+          overflow: visible;
           /* Orbit geometry variables (sun at 80,80; orbit center at 0,0) */
           --sun-x: 120px;
           --sun-y: 120px;
           --orbit-r: 169.71px; /* sqrt(120^2 + 120^2) */
           --start-x: 169.71px; /* top-right point on orbit */
           --start-y: 0px;
-          --dur: 0.75s;
+          --dur: 2s;
         }
         /* Backdrop: sits behind content, does not catch events */
         .solar-backdrop {
@@ -255,16 +251,17 @@ export function SolarCorner() {
           background-image:
             radial-gradient(
               farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
-              rgba(184, 131, 31, 0.42) 0%,
-              rgba(184, 131, 31, 0.26) 24%,
-              rgba(184, 131, 31, 0.12) 52%,
-              rgba(184, 131, 31, 0.04) 76%,
+              rgba(184, 131, 31, 0.18) 0%,
+              rgba(184, 131, 31, 0.10) 10%,
+              rgba(184, 131, 31, 0.045) 22%,
+              rgba(184, 131, 31, 0.015) 36%,
+              rgba(184, 131, 31, 0.004) 52%,
               rgba(184, 131, 31, 0) 100%
             ),
             radial-gradient(
               farthest-corner circle at 0% 100%,
               rgba(0, 0, 0, 0) 40%,
-              rgba(0, 0, 0, 0.12) 100%
+              rgba(122, 96, 56, 0.18) 100%
             );
           background-repeat: no-repeat;
           background-attachment: fixed;
@@ -273,48 +270,44 @@ export function SolarCorner() {
           background-image:
             radial-gradient(
               farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
-              rgba(233, 185, 73, 0.55) 0%,
-              rgba(233, 185, 73, 0.30) 22%,
-              rgba(233, 185, 73, 0.14) 48%,
-              rgba(233, 185, 73, 0.05) 72%,
+              rgba(241, 196, 83, 0.22) 0%,
+              rgba(241, 196, 83, 0.12) 12%,
+              rgba(241, 196, 83, 0.055) 24%,
+              rgba(241, 196, 83, 0.02) 36%,
+              rgba(241, 196, 83, 0.006) 52%,
               rgba(233, 185, 73, 0) 100%
             ),
             radial-gradient(
               farthest-corner circle at 0% 100%,
-              rgba(0, 0, 0, 0) 30%,
-              rgba(0, 0, 0, 0.35) 100%
+              rgba(0, 0, 0, 0) 28%,
+              rgba(6, 9, 14, 0.46) 100%
             );
         }
-        .svg-root { display: block; }
+        .svg-root { display: block; overflow: visible; }
         /* Base states */
         /* Remove inner SVG glow ring to avoid visible edge with page backdrop */
         .sun-glow { display: none; }
-        .moon-group { opacity: 0; }
-        .dark-active .moon-group { opacity: 1; }
+        .moon-group { display: none; }
+        .dark-active .moon-group { display: block; }
         /* Smooth circular motion: rotate the orbit group around (0,0) */
         .moon-orbit {
           transform-origin: 0px 0px;
           transform: rotate(var(--orbit-angle, 0deg)) translateZ(0);
           will-change: transform;
-          transition: transform var(--orbit-dur, 0.75s) cubic-bezier(0.22, 1, 0.36, 1);
+          /* Smooth orbit: gentle ease-in-out (S-curve) for natural motion */
+          transition: transform var(--orbit-dur, 1.8s) cubic-bezier(0.45, 0, 0.55, 1);
         }
-        .moon-group { transition: opacity var(--fade-dur, 0.75s) ease-in-out; }
+        /* No fade — moon remains opaque during motion */
+        .moon-group { transition: none; }
         /* Corona ring visible only in dark mode */
         .corona-overlay { opacity: 0; transition: opacity 220ms ease-in-out; }
         :global(.dark) .solar-corner .corona-overlay { opacity: 1; }
         /* Dark mode styling: emphasize corona, use dark moon fill */
-        :global(.dark) .solar-corner .sun-core { opacity: 0.12; }
-        :global(.dark) .solar-corner .sun-glow { opacity: 0.15; }
-        :global(.dark) .solar-corner .sun-corona { opacity: 0.85; }
-        :global(.dark) .solar-corner .moon { fill: url(#moonFillDark); stroke: #E9B949; stroke-opacity: 0.18; stroke-width: 1px; }
-        /* During motion, render the moon bright/white to contrast the travel
-           path and feel illuminated (uses subtle cool tint). */
-        .solar-corner.anim-in .moon {
-          fill: url(#moonFillLight);
-          stroke: #ffffff;
-          stroke-opacity: 0.28;
-          stroke-width: 1px;
-        }
+        :global(.dark) .solar-corner .sun-core { opacity: 0.10; }
+        :global(.dark) .solar-corner .sun-glow { opacity: 0.12; }
+        :global(.dark) .solar-corner .sun-corona { opacity: 0.72; }
+        .solar-corner .moon { fill: rgb(var(--umbra-rgb)); stroke: #F1C453; stroke-opacity: 0.16; stroke-width: 1px; }
+        /* Keep moon opaque/dark at all times (no tonal change during motion) */
         /* Stylized moon surface and rim */
         .moon-crater {
           fill: rgba(255, 255, 255, 0.07);
@@ -322,9 +315,7 @@ export function SolarCorner() {
           stroke-width: 0.5px;
         }
         .moon::after { opacity: 0.8; }
-        /* During the exit (light) reset window, keep the moon fully transparent
-           so any instant-reset is visually suppressed. */
-        .anim-out .moon-group { opacity: 0; }
+        /* During exit, keep showing the moon; it hides only after the orbit completes. */
       `}</style>
     </div>
   );

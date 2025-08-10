@@ -48,6 +48,8 @@
   /* Dynamic solar anchor populated by `SolarCorner` at runtime */
   --solar-anchor-x: 132px;
   --solar-anchor-y: 132px;
+  /* Umbra base color made global so dependent elements keep a constant color during theme transitions */
+  --umbra-rgb: 6, 9, 14;
   /* Light mode (elegant, solar-inspired) */
   --background: #F7F8FB;
   --foreground: #0B1220;
@@ -86,37 +88,39 @@
 
 .dark {
   /* Dark-first solar palette */
-  --background: #0A0E17;
-  --foreground: #EEF2F8;
-  --card: #0F1624;
-  --card-foreground: #EEF2F8;
-  --popover: #141C2C;
-  --popover-foreground: #EEF2F8;
-  --primary: #E9B949; /* solar gold */
-  --primary-foreground: #0A0E17;
-  --secondary: #E0793E; /* muted flare orange */
-  --secondary-foreground: #0A0E17;
-  --muted: #1A2335;
-  --muted-foreground: #A5B0C5;
-  --accent: #2CBFAE; /* prism teal */
-  --accent-foreground: #0A0E17;
+  --background: #070A12; /* deeper night-navy */
+  --foreground: #E6EBF5;
+  --card: #0B1220;
+  --card-foreground: #E6EBF5;
+  --popover: #0E1626;
+  --popover-foreground: #E6EBF5;
+  --primary: #F1C453; /* tempered solar gold */
+  --primary-foreground: #070A12;
+  --secondary: #D77A3A; /* muted, less saturated flare */
+  --secondary-foreground: #070A12;
+  --muted: #0F1A2A;
+  --muted-foreground: #A9B4C9;
+  --accent: #23AFA1; /* cooled prism teal */
+  --accent-foreground: #070A12;
   --destructive: #EF5E5E;
-  --border: #22304A;
-  --input: #22304A;
-  --ring: rgba(233, 185, 73, 0.45);
-  --chart-1: #E9B949;
-  --chart-2: #2CBFAE;
-  --chart-3: #E0793E;
+  --border: #1B2740;
+  --input: #1B2740;
+  --ring: rgba(241, 196, 83, 0.38);
+  --chart-1: #F1C453;
+  --chart-2: #23AFA1;
+  --chart-3: #D77A3A;
   --chart-4: #4B5C7E;
   --chart-5: #3CCB7F;
-  --sidebar: #0F1624;
-  --sidebar-foreground: #EEF2F8;
-  --sidebar-primary: #E9B949;
-  --sidebar-primary-foreground: #0A0E17;
-  --sidebar-accent: #2CBFAE;
-  --sidebar-accent-foreground: #0A0E17;
-  --sidebar-border: #22304A;
-  --sidebar-ring: rgba(233, 185, 73, 0.45);
+  --sidebar: #0B1220;
+  --sidebar-foreground: #E6EBF5;
+  --sidebar-primary: #F1C453;
+  --sidebar-primary-foreground: #070A12;
+  --sidebar-accent: #23AFA1;
+  --sidebar-accent-foreground: #070A12;
+  --sidebar-border: #1B2740;
+  --sidebar-ring: rgba(241, 196, 83, 0.38);
+  /* Umbra base color (shared by gradients and moon occluder) */
+  --umbra-rgb: 6, 9, 14;
 }
 
 @layer base {
@@ -133,16 +137,17 @@
     background-image:
       radial-gradient(
         farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
-        rgba(184, 131, 31, 0.34) 0%,
-        rgba(184, 131, 31, 0.22) 22%,
-        rgba(184, 131, 31, 0.10) 48%,
-        rgba(184, 131, 31, 0.04) 72%,
+        rgba(184, 131, 31, 0.18) 0%,
+        rgba(184, 131, 31, 0.10) 10%,
+        rgba(184, 131, 31, 0.045) 22%,
+        rgba(184, 131, 31, 0.015) 36%,
+        rgba(184, 131, 31, 0.004) 52%,
         rgba(184, 131, 31, 0) 100%
       ),
       radial-gradient(
         farthest-corner circle at 0% 100%,
         rgba(0, 0, 0, 0) 40%,
-        rgba(0, 0, 0, 0.16) 100%
+        rgba(122, 96, 56, 0.18) 100%
       );
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -153,16 +158,17 @@
     background-image:
       radial-gradient(
         farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
-        rgba(184, 131, 31, 0.34) 0%,
-        rgba(184, 131, 31, 0.22) 22%,
-        rgba(184, 131, 31, 0.10) 48%,
-        rgba(184, 131, 31, 0.04) 72%,
+        rgba(184, 131, 31, 0.18) 0%,
+        rgba(184, 131, 31, 0.10) 10%,
+        rgba(184, 131, 31, 0.045) 22%,
+        rgba(184, 131, 31, 0.015) 36%,
+        rgba(184, 131, 31, 0.004) 52%,
         rgba(184, 131, 31, 0) 100%
       ),
       radial-gradient(
         farthest-corner circle at 0% 100%,
         rgba(0, 0, 0, 0) 40%,
-        rgba(0, 0, 0, 0.16) 100%
+        rgba(122, 96, 56, 0.18) 100%
       );
     background-repeat: no-repeat;
   background-attachment: fixed;
@@ -174,16 +180,17 @@
   background-image:
     radial-gradient(
       farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
-      rgba(233, 185, 73, 0.30) 0%,
-      rgba(233, 185, 73, 0.16) 20%,
-      rgba(233, 185, 73, 0.08) 42%,
-      rgba(233, 185, 73, 0.03) 68%,
+      rgba(241, 196, 83, 0.16) 0%,
+      rgba(241, 196, 83, 0.085) 10%,
+      rgba(241, 196, 83, 0.038) 22%,
+      rgba(241, 196, 83, 0.015) 36%,
+      rgba(241, 196, 83, 0.004) 52%,
       rgba(233, 185, 73, 0) 100%
     ),
     radial-gradient(
       farthest-corner circle at 0% 100%,
-      rgba(0, 0, 0, 0) 35%,
-      rgba(0, 0, 0, 0.28) 100%
+      rgba(0, 0, 0, 0) 28%,
+      rgba(var(--umbra-rgb), 0.46) 100%
     );
   background-repeat: no-repeat;
   background-attachment: fixed; /* prevent gradient scroll-induced seams */
@@ -197,16 +204,17 @@
   background-image:
     radial-gradient(
       farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
-      rgba(233, 185, 73, 0.30) 0%,
-      rgba(233, 185, 73, 0.16) 20%,
-      rgba(233, 185, 73, 0.08) 42%,
-      rgba(233, 185, 73, 0.03) 68%,
+      rgba(241, 196, 83, 0.16) 0%,
+      rgba(241, 196, 83, 0.085) 10%,
+      rgba(241, 196, 83, 0.038) 22%,
+      rgba(241, 196, 83, 0.015) 36%,
+      rgba(241, 196, 83, 0.004) 52%,
       rgba(233, 185, 73, 0) 100%
     ),
     radial-gradient(
       farthest-corner circle at 0% 100%,
-      rgba(0, 0, 0, 0) 35%,
-      rgba(0, 0, 0, 0.28) 100%
+      rgba(0, 0, 0, 0) 28%,
+      rgba(var(--umbra-rgb), 0.46) 100%
     );
   background-repeat: no-repeat;
   background-attachment: fixed; /* prevent gradient scroll-induced seams */
