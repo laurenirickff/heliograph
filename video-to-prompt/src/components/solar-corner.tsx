@@ -33,8 +33,8 @@ export function SolarCorner() {
         const el = document.querySelector<HTMLElement>(".solar-corner");
         if (!el) return;
         const rect = el.getBoundingClientRect();
-        const sunCenterX = rect.left + 120; // sun cx within 240x240 box
-        const sunCenterY = rect.top + 120;  // sun cy within 240x240 box
+        const sunCenterX = rect.left + rect.width / 2;
+        const sunCenterY = rect.top + rect.height / 2;
         const root = document.documentElement;
         root.style.setProperty("--solar-anchor-x", `${sunCenterX}px`);
         root.style.setProperty("--solar-anchor-y", `${sunCenterY}px`);
@@ -176,7 +176,7 @@ export function SolarCorner() {
     >
       {/* Full-viewport solar backdrop anchored to the sun's position via portal to avoid clipping */}
       {mounted && createPortal(<div className="solar-backdrop" />, document.body)}
-      <svg width="240" height="240" viewBox="0 0 240 240" className="svg-root" style={{ overflow: "visible" }}>
+      <svg width="300" height="300" viewBox="0 0 240 240" className="svg-root" style={{ overflow: "visible" }}>
         <defs>
           {/* Sun */}
           <radialGradient id="sunGlow" cx="35%" cy="35%" r="70%">
@@ -233,10 +233,10 @@ export function SolarCorner() {
       <style jsx>{`
         .solar-corner {
           position: fixed;
-          top: 12px;
-          left: 12px;
-          width: 240px;
-          height: 240px;
+          top: -68px; /* nudge further so larger sun still reads as corner accent */
+          left: -68px;
+          width: 300px; /* 25% larger than 240 */
+          height: 300px;
           pointer-events: none;
           z-index: 1; /* ensure the corner SVG sits above the backdrop */
           /* Allow the moon to travel beyond the corner without being clipped */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Fraunces } from "next/font/google";
 import { UploadZone } from "@/components/upload-zone";
 import { ProcessingView } from "@/components/processing-view";
 import { PromptOutput } from "@/components/prompt-output";
@@ -10,6 +11,8 @@ import { EffectivePreview } from "@/components/effective-preview";
 import { getPresetText } from "@/lib/presets";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SolarCorner } from "@/components/solar-corner";
+
+const fraunces = Fraunces({ subsets: ["latin"], weight: ["600", "700"], display: "swap" });
 
 export default function Home() {
   const [template, setTemplate] = useState<"browser-use" | "airtop">("browser-use");
@@ -42,11 +45,17 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto p-8 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-8 pt-6 pb-8">
       <SolarCorner />
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Heliograph</h1>
-        <ThemeToggle />
+      <div className="relative mb-6 mt-20 md:mt-24">
+        <div className="absolute right-0 top-0">
+          <ThemeToggle />
+        </div>
+        <h1
+          className={`${fraunces.className} text-5xl md:text-6xl font-semibold tracking-wide text-[#B8831F] dark:text-[#F1C453] pb-2 border-b border-amber-400/30 dark:border-amber-300/25`}
+        >
+          Heliograph
+        </h1>
       </div>
 
       {/* Tagline: Transform sun to morse code -> video to prompts */}

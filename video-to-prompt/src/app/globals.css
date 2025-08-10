@@ -226,3 +226,109 @@
   background-repeat: no-repeat;
   background-attachment: fixed; /* prevent gradient scroll-induced seams */
 }
+
+/* During delayed transitions, keep gradients visually in the previous mode
+   until the overlap-based delay elapses. These override the .dark rules. */
+:root.theme-to-dark html {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(184, 131, 31, 0.18) 0%,
+      rgba(184, 131, 31, 0.10) 10%,
+      rgba(184, 131, 31, 0.045) 22%,
+      rgba(184, 131, 31, 0.015) 36%,
+      rgba(184, 131, 31, 0.004) 52%,
+      rgba(184, 131, 31, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 40%,
+      rgba(122, 96, 56, 0.18) 100%
+    );
+}
+:root.theme-to-dark body {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(184, 131, 31, 0.18) 0%,
+      rgba(184, 131, 31, 0.10) 10%,
+      rgba(184, 131, 31, 0.045) 22%,
+      rgba(184, 131, 31, 0.015) 36%,
+      rgba(184, 131, 31, 0.004) 52%,
+      rgba(184, 131, 31, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 40%,
+      rgba(122, 96, 56, 0.18) 100%
+    );
+}
+:root.theme-to-dark .solar-backdrop {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(184, 131, 31, 0.18) 0%,
+      rgba(184, 131, 31, 0.10) 10%,
+      rgba(184, 131, 31, 0.045) 22%,
+      rgba(184, 131, 31, 0.015) 36%,
+      rgba(184, 131, 31, 0.004) 52%,
+      rgba(184, 131, 31, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 40%,
+      rgba(122, 96, 56, 0.18) 100%
+    );
+}
+
+:root.theme-to-light html {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(241, 196, 83, 0.16) 0%,
+      rgba(241, 196, 83, 0.085) 10%,
+      rgba(241, 196, 83, 0.038) 22%,
+      rgba(241, 196, 83, 0.015) 36%,
+      rgba(241, 196, 83, 0.004) 52%,
+      rgba(233, 185, 73, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 28%,
+      rgba(var(--umbra-rgb), 0.46) 100%
+    );
+}
+:root.theme-to-light body {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(241, 196, 83, 0.16) 0%,
+      rgba(241, 196, 83, 0.085) 10%,
+      rgba(241, 196, 83, 0.038) 22%,
+      rgba(241, 196, 83, 0.015) 36%,
+      rgba(241, 196, 83, 0.004) 52%,
+      rgba(233, 185, 73, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 28%,
+      rgba(var(--umbra-rgb), 0.46) 100%
+    );
+}
+:root.theme-to-light .solar-backdrop {
+  background-image:
+    radial-gradient(
+      farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
+      rgba(241, 196, 83, 0.16) 0%,
+      rgba(241, 196, 83, 0.085) 10%,
+      rgba(241, 196, 83, 0.038) 22%,
+      rgba(241, 196, 83, 0.015) 36%,
+      rgba(241, 196, 83, 0.004) 52%,
+      rgba(233, 185, 73, 0) 100%
+    ),
+    radial-gradient(
+      farthest-corner circle at 0% 100%,
+      rgba(0, 0, 0, 0) 28%,
+      rgba(var(--umbra-rgb), 0.46) 100%
+    );
+}
