@@ -45,6 +45,9 @@
 
 :root {
   --radius: 0.625rem;
+  /* Layout controls */
+  --content-max: 2400px;
+  --page-gutter: 32px;
   /* Dynamic solar anchor populated by `SolarCorner` at runtime */
   --solar-anchor-x: 132px;
   --solar-anchor-y: 132px;

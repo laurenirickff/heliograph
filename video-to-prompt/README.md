@@ -32,7 +32,7 @@ Open http://localhost:3000
 
 ## Notes
 
-- Supports MP4, MOV, WebM up to 100MB
+- Supports MP4, MOV, WebM up to 500MB
 - Two prompt presets: Browser‑Use MCP and AirTop (fully editable)
 - Copy to clipboard and Download as .txt
 - Uses Gemini 2.5 Flash via Files API (requires `GEMINI_API_KEY`)
@@ -41,7 +41,7 @@ Open http://localhost:3000
 
 1) Select a prompt preset (Browser‑Use MCP or AirTop)
 2) Edit the preset text as you like (this is the exact text sent to the model)
-3) Upload a video (MP4/MOV/WebM, ≤100MB)
+3) Upload a video (MP4/MOV/WebM, ≤500MB)
 4) Receive the generated prompt text and copy or download it
 
 ## Goals

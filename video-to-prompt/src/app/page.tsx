@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Fraunces } from "next/font/google";
 import { UploadZone } from "@/components/upload-zone";
 import { ProcessingView } from "@/components/processing-view";
@@ -26,6 +26,13 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // Keep the inline SolarCorner a fixed, stable size so typography changes
+  // don't alter the icon dimensions or alignment.
+  useEffect(() => {
+    const rowEl = document.getElementById("header-row");
+    if (!rowEl) return;
+    rowEl.style.setProperty("--logo-circle-d", `150px`);
+  }, []);
 
   const handleUpload = async (file: File) => {
     setState("uploading");
@@ -52,29 +59,38 @@ export default function Home() {
   };
 
   return (
-      <div className="mx-auto w-full max-w-[min(1800px,calc(100vw-4rem))] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-4 pb-12 relative z-10">
-      <SolarCorner />
-      <div className="relative mb-4 mt-8 md:mt-10 pl-[max(14rem,calc(var(--solar-anchor-x)+72px))] xl:pl-0">
-        <div className="absolute right-0 top-0">
-          <ThemeToggle />
+    <div className="mx-auto w-full max-w-[min(var(--content-max),calc(100vw-2*var(--page-gutter)))] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-0 md:pt-1 pb-6 relative z-10">
+      {/* Header: sun and title side-by-side like a logo */}
+      <header className="relative">
+        <div className="flex items-end gap-3 md:gap-4">
+          {/* Compute the logo circle target height based on header text block */}
+          <div className="flex items-center gap-3 md:gap-4" style={{
+            // CSS var used by SolarCorner inline scaling; updated by effect below
+            // Fallback keeps a sensible size before hydration
+            ['--logo-circle-d' as any]: '150px'
+          }} id="header-row">
+            <SolarCorner variant="inline" />
+            <div className="flex-1" id="header-text">
+              <h1
+                className={`${fraunces.className} text-[56px] md:text-[104px] leading-[1.03] font-semibold tracking-[-0.01em] text-[#B8831F] dark:text-[#F1C453]`}
+              >
+                Heliograph
+              </h1>
+              <p className="mt-1 text-[20px] md:text-[34px] font-semibold tracking-tight leading-[1.15] text-[#B8831F] dark:text-[#F1C453] opacity-80">
+                Transform videos to prompts
+              </p>
+            </div>
+          </div>
+          <div className="ml-auto self-start">
+            <ThemeToggle />
+          </div>
         </div>
-        <h1
-          className={`${fraunces.className} text-5xl md:text-6xl font-semibold tracking-wide text-[#B8831F] dark:text-[#F1C453] pb-2 border-b border-amber-400/30 dark:border-amber-300/25`}
-        >
-          Heliograph
-        </h1>
-      </div>
-
-      {/* Tagline: strong, simple subhead under title (no lines) */}
-      <div className="mb-8 pl-[max(14rem,calc(var(--solar-anchor-x)+72px))] xl:pl-0">
-        <p className="mt-1 text-[clamp(16px,1.8vw,20px)] font-semibold tracking-tight leading-snug text-[#B8831F] dark:text-[#F1C453] opacity-80">
-          Transform videos to prompts
-        </p>
-      </div>
+      </header>
+      {/* Tightened spacing: remove extra spacer blocks under the header */}
 
       {/* Steps: vertically stacked full-width */}
       {state === "idle" && (
-        <Card className="p-4 w-full relative z-10">
+        <Card className="p-4 w-full mt-0 relative z-10">
           <div className="space-y-1">
             <div>
               <h2 className="text-base font-medium">Step 1: Upload your video</h2>
@@ -85,7 +101,7 @@ export default function Home() {
         </Card>
       )}
 
-      <Card className="p-4 w-full mt-6 relative z-10">
+      <Card className="p-4 w-full mt-3 relative z-10">
         <div className="space-y-1">
           <div>
             <div className="flex items-center justify-between">

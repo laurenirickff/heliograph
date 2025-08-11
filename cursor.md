@@ -25,7 +25,7 @@ video-to-prompt/
 │   │   └── analyze/          # Video processing endpoint
 │   └── layout.tsx
 ├── components/
-│   ├── upload-zone.tsx       # Video upload (100MB max)
+│   ├── upload-zone.tsx       # Video upload (500MB max)
 │   ├── processing-view.tsx   # Progress display
 │   └── prompt-output.tsx     # Result display with copy
 ├── lib/
@@ -251,7 +251,7 @@ export default function Home() {
 #### Upload Zone
 - Drag-and-drop or click to browse
 - Accept: MP4, MOV, WebM
-- Max size: 100MB
+- Max size: 500MB
 - Show file preview with duration
 
 #### Processing View

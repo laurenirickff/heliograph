@@ -27,8 +27,8 @@ export function UploadZone({ onUpload, onSelect, showActionButton = true }: Prop
     setError(null);
     if (!files.length) return;
     const file = files[0];
-    if (file.size > 100 * 1024 * 1024) {
-      setError("File too large. Max 100MB.");
+    if (file.size > 500 * 1024 * 1024) {
+      setError("File too large. Max 500MB.");
       return;
     }
     setSelected(file);
@@ -66,7 +66,7 @@ export function UploadZone({ onUpload, onSelect, showActionButton = true }: Prop
         <input {...getInputProps()} />
         <div className="text-center">
           <p className="text-sm text-muted-foreground">
-            {isDragActive ? "Drop the video here..." : "Drag & drop a video (MP4, MOV, WebM) or click to browse (max 100MB)"}
+            {isDragActive ? "Drop the video here..." : "Drag & drop a video (MP4, MOV, WebM) or click to browse (max 500MB)"}
           </p>
           {selected && (
             <div className="mt-3 space-y-2">

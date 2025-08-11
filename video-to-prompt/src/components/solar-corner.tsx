@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
  * - Transition to light: moon departs along the same arc and hides.
  * - Respects reduced motion.
  */
-export function SolarCorner() {
+export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inline" } = {}) {
   const [darkActive, setDarkActive] = useState(false);
   const [animPhase, setAnimPhase] = useState<"idle" | "in" | "out">("idle");
   const [mounted, setMounted] = useState(false);
@@ -167,9 +167,9 @@ export function SolarCorner() {
 
   return (
     <div
-      className={`solar-corner${darkActive ? " dark-active" : ""}${
-        animPhase === "in" ? " anim-in" : animPhase === "out" ? " anim-out" : ""
-      }`}
+      className={`solar-corner ${variant === "inline" ? "variant-inline" : "variant-corner"}${
+        darkActive ? " dark-active" : ""
+      }${animPhase === "in" ? " anim-in" : animPhase === "out" ? " anim-out" : ""}`}
       ref={cornerRef}
       aria-hidden="true"
     >
@@ -226,14 +226,9 @@ export function SolarCorner() {
 
       <style jsx>{`
         .solar-corner {
-          position: fixed;
-          top: -60px; /* add a touch more in-page padding */
-          left: -60px;
-          width: 360px; /* 20% larger than previous 300 */
+          width: 360px; /* base box; actual visible size controlled via transform in variant */
           height: 360px;
-          /* Scale down overall size ~15% without altering internal geometry */
           transform-origin: top left;
-          transform: scale(0.85);
           pointer-events: none;
           z-index: 0; /* above page backgrounds; below content wrapper */
           /* Allow the moon to travel beyond the corner without being clipped */
@@ -245,6 +240,18 @@ export function SolarCorner() {
           --start-x: 169.71px; /* top-right point on orbit */
           --start-y: 0px;
           --dur: 2s;
+        }
+        .solar-corner.variant-corner { position: absolute; top: -60px; left: -60px; transform: scale(0.85); }
+        /* Inline variant: scale so the sun core diameter equals var(--logo-circle-d)
+           Core diameter in px = 171 * scale (for base width/height 360, viewBox 240, core r=57)
+           => scale = var(--logo-circle-d) / 171px */
+        .solar-corner.variant-inline {
+          position: relative; top: 0; left: 0;
+          transform: scale(calc(var(--logo-circle-d, 150px) / 171px));
+          /* Align the leftmost edge of the sun core with the content/cards left edge.
+             Core-left offset at scale 1 = (cx - r) * 1.5 = 94.5px; core diameter = 171px.
+             So offset fraction relative to diameter = 94.5 / 171 = 0.55263158. */
+          margin-left: calc(var(--logo-circle-d, 150px) * -0.55263158);
         }
         /* Backdrop: sits behind content, does not catch events */
         .solar-backdrop {
