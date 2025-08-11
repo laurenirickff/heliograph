@@ -78,7 +78,7 @@ export function ThemeToggle() {
       title={theme === "dark" ? "unleash the sun" : "the sun is too bright"}
       aria-label={theme === "dark" ? "unleash the sun" : "the sun is too bright"}
       aria-pressed={theme === "dark"}
-      className="relative mt-1 rounded-full border border-input/60 bg-background/40 shadow-xs backdrop-blur supports-[backdrop-filter]:bg-background/20 hover:shadow-sm hover:border-accent/50 focus-visible:ring-accent/40"
+      className={`relative mt-1.5 rounded-full border border-input/60 bg-background/40 shadow-xs backdrop-blur supports-[backdrop-filter]:bg-background/20 hover:shadow-sm hover:border-accent/50 focus-visible:ring-accent/40 ${theme === "light" ? "text-[#B8831F]/90 hover:text-[#B8831F]" : ""}`}
    >
       <span>{theme === "dark" ? "unleash the sun" : "the sun is too bright"}</span>
     </Button>

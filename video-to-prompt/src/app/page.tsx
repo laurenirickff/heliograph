@@ -103,13 +103,13 @@ export default function Home() {
       <header className="relative">
         <div className="flex items-end gap-3 md:gap-4">
           {/* Compute the logo circle target height based on header text block */}
-          <div className="flex items-center gap-3 md:gap-4" style={{
+          <div className="flex items-center gap-0 md:gap-0" style={{
             // CSS var used by SolarCorner inline scaling; updated by effect below
             // Fallback keeps a sensible size before hydration
             ['--logo-circle-d' as unknown as string]: '150px'
           }} id="header-row">
             <SolarCorner variant="inline" />
-            <div className="flex-1" id="header-text">
+            <div className="flex-1 -ml-5 md:-ml-8" id="header-text">
               <h1
                 className={`${fraunces.className} text-[56px] md:text-[104px] leading-[1.03] font-semibold tracking-[-0.01em] text-[#B8831F] dark:text-[#F1C453]`}
               >

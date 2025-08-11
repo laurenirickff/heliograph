@@ -247,11 +247,16 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
            => scale = var(--logo-circle-d) / 171px */
         .solar-corner.variant-inline {
           position: relative; top: 0; left: 0;
-          transform: scale(calc(var(--logo-circle-d, 150px) / 171px));
+          /* Right-size the layout box to the visual size (scale factor = 360/171 = 2.10526316).
+             This avoids transform-based layout inflation while preserving the same visual geometry. */
+          width: calc(var(--logo-circle-d, 150px) * 2.10526316);
+          height: calc(var(--logo-circle-d, 150px) * 2.10526316);
           /* Align the leftmost edge of the sun core with the content/cards left edge.
              Core-left offset at scale 1 = (cx - r) * 1.5 = 94.5px; core diameter = 171px.
              So offset fraction relative to diameter = 94.5 / 171 = 0.55263158. */
           margin-left: calc(var(--logo-circle-d, 150px) * -0.55263158);
+          /* Stronger downward nudge to visibly shift center toward the H crossbar. */
+          margin-top: calc(var(--logo-circle-d, 150px) * -0.55263158 + var(--logo-circle-d, 150px) * 0.30);
         }
         /* Backdrop: sits behind content, does not catch events */
         .solar-backdrop {
@@ -294,7 +299,7 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
               rgba(6, 9, 14, 0.46) 100%
             );
         }
-        .svg-root { display: block; overflow: visible; }
+        .svg-root { display: block; overflow: visible; width: 100%; height: 100%; }
         /* Base states */
         /* Remove inner SVG glow ring to avoid visible edge with page backdrop */
         .sun-glow { display: none; }
