@@ -29,7 +29,7 @@ export function SummaryCard({ runId }: Props) {
     if (!summary) return null;
     const data = summary.data as Record<string, unknown> | undefined;
     const winner = (data?.winner as string) ?? undefined;
-    const deciders = (data?.deciders as string[]) ?? undefined;
+    const evaluators = (data?.evaluators as string[]) ?? undefined;
     const averages = (data?.averages as string) ?? undefined;
 
     return (
@@ -38,11 +38,11 @@ export function SummaryCard({ runId }: Props) {
         {averages && (
           <div className="text-sm"><span className="font-medium">Average rankings:</span> {averages}</div>
         )}
-        {Array.isArray(deciders) && deciders.length > 0 && (
+        {Array.isArray(evaluators) && evaluators.length > 0 && (
           <div>
-            <div className="text-sm font-medium mb-1">Per-decider rankings</div>
+            <div className="text-sm font-medium mb-1">Per-evaluator rankings</div>
             <ul className="list-disc pl-5 text-xs space-y-0.5">
-              {deciders.map((line, i) => (
+              {evaluators.map((line, i) => (
                 <li key={i} className="leading-snug">{line}</li>
               ))}
             </ul>

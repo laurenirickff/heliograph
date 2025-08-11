@@ -7,7 +7,7 @@ export type ActivityPhase =
   | "init"
   | "upload"
   | "generators"
-  | "deciders"
+  | "evaluators"
   | "aggregation"
   | "result"
   | "error";

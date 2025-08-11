@@ -37,9 +37,9 @@ export default function Home() {
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [generators, setGenerators] = useState<number>(5);
-  const [deciders, setDeciders] = useState<number>(3);
+  const [evaluators, setEvaluators] = useState<number>(3);
   const [generatorModel, setGeneratorModel] = useState<string>("gemini-2.5-flash");
-  const [deciderModel, setDeciderModel] = useState<string>("gemini-2.5-flash");
+  const [evaluatorModel, setEvaluatorModel] = useState<string>("gemini-2.5-flash");
   // Keep the inline SolarCorner a fixed, stable size so typography changes
   // don't alter the icon dimensions or alignment.
   useEffect(() => {
@@ -68,9 +68,9 @@ export default function Home() {
     formData.append("preset", template);
     formData.append("promptText", promptText);
     formData.append("generators", String(generators));
-    formData.append("deciders", String(deciders));
+    formData.append("evaluators", String(evaluators));
     formData.append("generatorModel", generatorModel);
-    formData.append("deciderModel", deciderModel);
+    formData.append("evaluatorModel", evaluatorModel);
     formData.append("runId", newRunId);
 
     setState("processing");
@@ -157,7 +157,7 @@ export default function Home() {
                   }}
                 />
               </div>
-              <p className="text-sm leading-snug text-muted-foreground">Pick a template and adjust the prompt as needed.</p>
+             <p className="text-sm leading-snug text-muted-foreground">Pick a template and adjust the prompt as needed.</p>
             </div>
             <ControlsSimple
               showLabel={false}
@@ -172,7 +172,7 @@ export default function Home() {
         <Card className="p-4 w-full mt-6 relative z-10">
           <div className="mb-3">
             <h2 className="text-base font-medium">Step 3: Advanced settings</h2>
-            <p className="text-sm text-muted-foreground">Configure the number of generators and deciders, and choose models.</p>
+            <p className="text-sm text-muted-foreground">Configure the number of generators and evaluators, and choose models.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -188,14 +188,14 @@ export default function Home() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deciders">Deciders (K)</Label>
+              <Label htmlFor="evaluators">Evaluators (K)</Label>
               <input
-                id="deciders"
+                id="evaluators"
                 type="number"
                 min={1}
                 max={7}
-                value={deciders}
-                onChange={(e) => setDeciders(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
+                value={evaluators}
+                onChange={(e) => setEvaluators(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
                 className="w-full rounded border px-3 py-2 text-sm bg-transparent"
               />
             </div>
@@ -211,8 +211,8 @@ export default function Home() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Decider model</Label>
-              <Select value={deciderModel} onValueChange={setDeciderModel}>
+              <Label>Evaluator model</Label>
+              <Select value={evaluatorModel} onValueChange={setEvaluatorModel}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>

@@ -10,11 +10,11 @@ It extracts the intent from a short screen recording, then uses a multi‑agent 
 - Pick a prompt preset (e.g., Browser‑Use MCP) and optionally edit the text shown in the editor
 - Optionally adjust Advanced settings:
   - Generators (N): how many independent candidates to produce
-  - Deciders (K): how many judges evaluate and rank acceptable candidates
-  - Models for generators and deciders
+  - Evaluators (K): how many judges evaluate and rank acceptable candidates
+  - Models for generators and evaluators
 - Click Generate. You will see:
-  - Activity stream as the pipeline runs (upload → generators → deciders → aggregation)
-  - A summary of decider rankings and average ranks
+  - Activity stream as the pipeline runs (upload → generators → evaluators → aggregation)
+  - A summary of evaluator rankings and average ranks
   - The Best Result (copy/download), plus download buttons for the prompt+result and for all candidates
 
 ## How it works (multi‑tier agents)
@@ -23,18 +23,18 @@ It extracts the intent from a short screen recording, then uses a multi‑agent 
    - Each generator receives the same uploaded video and the same preset text you edited.
    - They produce N freeform candidate outputs in parallel.
 
-2) Deciders (K)
-   - Each decider independently evaluates the candidate set against the original “ASK” (your edited preset text).
-   - A decider returns a strict ranking of only the candidates it deems acceptable. Unacceptable candidates are not ranked.
+2) Evaluators (K)
+   - Each evaluator independently evaluates the candidate set against the original “ASK” (your edited preset text).
+   - An evaluator returns a strict ranking of only the candidates it deems acceptable. Unacceptable candidates are not ranked.
 
 3) IRV aggregation and acceptability
-   - We compute acceptability counts (how many deciders ranked each candidate at all).
-   - Candidates that reach an acceptability threshold (≥2 deciders) are eligible for Instant‑Runoff Voting.
+   - We compute acceptability counts (how many evaluators ranked each candidate at all).
+   - Candidates that reach an acceptability threshold (≥2 evaluators) are eligible for Instant‑Runoff Voting.
    - IRV proceeds round‑by‑round until a strict majority is reached; ties are broken deterministically by lowest index when needed.
    - If no candidate is acceptable or no consensus emerges, the app falls back to returning all candidates concatenated so you can review and choose.
 
 4) Observability and downloads
-   - A server‑sent event (SSE) activity log streams the pipeline’s progress with generator/decider names and vote snapshots.
+  - A server‑sent event (SSE) activity log streams the pipeline’s progress with generator/evaluator names and vote snapshots.
    - The UI exposes downloads for the best result, the best result with the ASK, and a complete “all results and prompt” bundle including average rankings.
 
 ## Prompt presets (editable)
@@ -49,10 +49,10 @@ These presets are just text. The exact content you see in the editor is what is 
 ## API surface
 
 - POST `/api/analyze` (multipart/form-data)
-  - Fields: `video` (File), `preset`, `promptText`, `generators`, `deciders`, `generatorModel`, `deciderModel`, `temperature`, `maxOutputTokens`, `runId`
+  - Fields: `video` (File), `preset`, `promptText`, `generators`, `evaluators`, `generatorModel`, `evaluatorModel`, `temperature`, `maxOutputTokens`, `runId`
   - Behavior:
     - If no advanced fields provided, runs a single‑shot generation.
-    - Otherwise runs the N‑generator / K‑decider pipeline with IRV aggregation and returns:
+    - Otherwise runs the N‑generator / K‑evaluator pipeline with IRV aggregation and returns:
       - `prompt` (best or concatenated fallback), `meta`, `candidates`, `generatorNames`, `averageRankings`
 - GET `/api/logs/[runId]/stream` (SSE): live activity events for the UI’s activity panel
 - POST `/api/logs/[runId]/emit` (dev‑only): emit a test event in development

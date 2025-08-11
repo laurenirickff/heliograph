@@ -11,9 +11,9 @@ export async function POST(request: Request) {
   const _preset = (formData.get("preset") as string) || "browser-use";
   const promptText = (formData.get("promptText") as string) || "";
   const generators = formData.get("generators");
-  const deciders = formData.get("deciders");
+  const evaluators = formData.get("evaluators");
   const generatorModel = (formData.get("generatorModel") as string) || undefined;
-  const deciderModel = (formData.get("deciderModel") as string) || undefined;
+  const evaluatorModel = (formData.get("evaluatorModel") as string) || undefined;
   const temperature = formData.get("temperature");
   const maxOutputTokens = formData.get("maxOutputTokens");
   const runId = (formData.get("runId") as string) || undefined;
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Missing prompt text" }, { status: 400 });
     }
     // If no advanced settings provided, keep legacy single-shot behavior for backward compat
-    const hasAdvanced = Boolean(generators || deciders || generatorModel || deciderModel || temperature || maxOutputTokens);
+    const hasAdvanced = Boolean(generators || evaluators || generatorModel || evaluatorModel || temperature || maxOutputTokens);
     if (!hasAdvanced) {
       appendLog(runId, "init", "single", "Single-shot generation started");
       const prompt = await generateTextWithVideo(video, effectivePrompt);
@@ -48,18 +48,18 @@ export async function POST(request: Request) {
     // New IRV pipeline
     appendLog(runId, "init", "run_started", "IRV analysis started", {
       generators: generators ? Number(generators) : undefined,
-      deciders: deciders ? Number(deciders) : undefined,
+      evaluators: evaluators ? Number(evaluators) : undefined,
       generatorModel,
-      deciderModel,
+      evaluatorModel,
       temperature: temperature ? Number(temperature) : undefined,
       maxOutputTokens: maxOutputTokens ? Number(maxOutputTokens) : undefined,
     });
 
     const result = await analyzeWithIRV(video, effectivePrompt, {
       generators: generators ? Number(generators) : undefined,
-      deciders: deciders ? Number(deciders) : undefined,
+      evaluators: evaluators ? Number(evaluators) : undefined,
       generatorModel,
-      deciderModel,
+      evaluatorModel,
       temperature: temperature ? Number(temperature) : undefined,
       maxOutputTokens: maxOutputTokens ? Number(maxOutputTokens) : undefined,
       runId,

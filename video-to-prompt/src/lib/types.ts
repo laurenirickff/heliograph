@@ -33,7 +33,7 @@ export type NormalizeMode = "strict" | "lenient" | "none";
 
 
 // --------------------
-// Generation/Decider/IRV types
+// Generation/Evaluator/IRV types
 // --------------------
 
 export type GeneratorOutput = {
@@ -41,21 +41,21 @@ export type GeneratorOutput = {
   text: string; // free-form content
 };
 
-export type DeciderPerCandidate = {
+export type EvaluatorPerCandidate = {
   index: number;
   strengths?: string[];
   issues?: string[];
 };
 
-// Simplified decider vote: rank ONLY acceptable candidates. No thumbs up field.
-export type DeciderVote = {
+// Simplified evaluator vote: rank ONLY acceptable candidates. No thumbs up field.
+export type EvaluatorVote = {
   ranking: number[]; // strict order of acceptable indices only
-  perCandidate?: DeciderPerCandidate[];
+  perCandidate?: EvaluatorPerCandidate[];
 };
 
 export type AggregateDecision = {
   hasAnyAcceptable: boolean;
-  acceptableCounts: number[]; // length N; counts of deciders who ranked each candidate
+  acceptableCounts: number[]; // length N; counts of evaluators who ranked each candidate
   winnerIndex: number | null; // final selection or null if no consensus
   wasTieBroken: boolean;
   rationale: string[]; // brief machine-readable bullets
@@ -66,7 +66,7 @@ export type AnalyzeSuccess = {
   meta: {
     chosenIndex: number;
     acceptableCounts: number[]; // per candidate
-    deciderRankingSnapshots: number[][]; // each decider’s ranking array (canonical indices)
+    evaluatorRankingSnapshots: number[][]; // each evaluator’s ranking array (canonical indices)
     wasTieBroken: boolean;
   };
 };
@@ -75,7 +75,7 @@ export type AnalyzeFallback = {
   prompt: string; // concatenated outputs with dividers for download/UI display
   meta: {
     acceptableCounts: number[];
-    deciderRankingSnapshots: number[][];
+    evaluatorRankingSnapshots: number[][];
     reason: string; // short note (e.g., "No consensus")
   };
 };

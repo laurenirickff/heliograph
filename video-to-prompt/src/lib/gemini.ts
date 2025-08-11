@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { GoogleGenAI, createUserContent, createPartFromUri } from "@google/genai";
-import { Action, AggregateDecision, DeciderVote, GeneratorOutput } from "./types";
+import { Action, AggregateDecision, EvaluatorVote, GeneratorOutput } from "./types";
 import { appendLog } from "./run-log";
-import { EXTRACTION_PROMPT_STRICT, buildDeciderPrompt } from "./prompts";
+import { EXTRACTION_PROMPT_STRICT, buildEvaluatorPrompt } from "./prompts";
 
 interface UploadResponseMeta {
   file: {
@@ -616,7 +616,7 @@ export async function generateTextWithVideo(file: File, promptText: string): Pro
 }
 
 // --------------------
-// Generators/Deciders/IRV Orchestration
+// Generators/Evaluators/IRV Orchestration
 // --------------------
 
 // Friendly agent name helpers
@@ -633,17 +633,23 @@ const G_NAMES = [
   "Gil",
   "Giselle",
 ] as const;
-const D_NAMES = [
-  "Danny",
-  "Diana",
-  "Derek",
-  "Darla",
-  "Diego",
-  "Daphne",
-  "Dillon",
-  "Daisy",
-  "Dominic",
-  "Denise",
+// Fun evaluator names (LoTR, Star Wars, popular games; light, no deep cuts; no Harry Potter)
+const E_NAMES = [
+  // Star Wars
+  "Ezra", // Rebels
+  "Ewok", // species, playful
+  "Echo", // Clone Force 99
+  "Enfys", // Enfys Nest
+  // Lord of the Rings
+  "Eowyn",
+  "Elrond",
+  "Eomer",
+  "Elfhelm",
+  // Games
+  "Eivor", // Assassin's Creed Valhalla
+  "Edgerunner", // Cyberpunk vibe
+  "Elden", // Elden Ring nod
+  "Ezio", // Assassin's Creed
 ] as const;
 
 function agentNameFrom(list: readonly string[], index: number): string {
@@ -808,14 +814,14 @@ function parseJsonOrFenced(input: string): any {
   }
 }
 
-export async function decideOnce(
+export async function evaluateOnce(
   originalPrompt: string,
   candidates: GeneratorOutput[],
   options?: { model?: string; timeoutMs?: number },
-): Promise<DeciderVote> {
+): Promise<EvaluatorVote> {
   // Shuffle presentation order but keep canonical indices in brackets so no remap needed
   const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-  const prompt = buildDeciderPrompt(originalPrompt, shuffled.map((c) => ({ index: c.index, text: c.text })));
+  const prompt = buildEvaluatorPrompt(originalPrompt, shuffled.map((c) => ({ index: c.index, text: c.text })));
   const model = options?.model || "gemini-2.5-flash";
   const response = await withRetry(
     () => getAI().models.generateContent({ model, contents: createUserContent([prompt]) }),
@@ -842,7 +848,7 @@ export async function decideOnce(
   try {
     parsed = parseJsonOrFenced(text) as { ranking?: number[]; perCandidate?: { index: number; strengths?: string[]; issues?: string[] }[] };
   } catch {
-    // Malformed JSON from decider; treat as empty ballot rather than throw
+    // Malformed JSON from evaluator; treat as empty ballot rather than throw
     parsed = { ranking: [], perCandidate: [] };
   }
   const ranking = Array.isArray(parsed?.ranking) ? parsed.ranking.filter((v) => Number.isInteger(v)) : [];
@@ -856,39 +862,39 @@ export async function decideOnce(
   const perCandidate = Array.isArray(parsed?.perCandidate)
     ? parsed.perCandidate.map((pc) => ({ index: pc.index, strengths: pc.strengths || [], issues: pc.issues || [] }))
     : [];
-  return { ranking: cleanedRanking, perCandidate } as DeciderVote;
+  return { ranking: cleanedRanking, perCandidate } as EvaluatorVote;
 }
 
-export async function runDeciders(
+export async function runEvaluators(
   originalPrompt: string,
   candidates: GeneratorOutput[],
-  options?: { deciders?: number; model?: string; runId?: string },
-): Promise<DeciderVote[]> {
-  const K = Math.max(1, Math.min(Number(options?.deciders ?? 3), 7));
-  console.info("runDeciders: starting", { K, model: options?.model || "gemini-2.5-flash" });
-  const deciderNames = buildAgentNames(D_NAMES, K, (Math.floor(Date.now() / 1000) + 7) % K);
-  appendLog(options?.runId, "deciders", "start", "Starting deciders", { K, model: options?.model || "gemini-2.5-flash", deciders: deciderNames });
+  options?: { evaluators?: number; model?: string; runId?: string },
+): Promise<EvaluatorVote[]> {
+  const K = Math.max(1, Math.min(Number(options?.evaluators ?? 3), 7));
+  console.info("runEvaluators: starting", { K, model: options?.model || "gemini-2.5-flash" });
+  const evaluatorNames = buildAgentNames(E_NAMES, K, (Math.floor(Date.now() / 1000) + 7) % K);
+  appendLog(options?.runId, "evaluators", "start", "Starting evaluators", { K, model: options?.model || "gemini-2.5-flash", evaluators: evaluatorNames });
   const tasks = Array.from({ length: K }).map((_, j) =>
-    decideOnce(originalPrompt, candidates, { model: options?.model })
+    evaluateOnce(originalPrompt, candidates, { model: options?.model })
       .then((vote) => {
-        appendLog(options?.runId, "deciders", "vote", `Decider ${deciderNames[j]} returned ranking`, { j, name: deciderNames[j], ranking: vote.ranking });
+        appendLog(options?.runId, "evaluators", "vote", `Evaluator ${evaluatorNames[j]} returned ranking`, { j, name: evaluatorNames[j], ranking: vote.ranking });
         return { status: "fulfilled" as const, value: vote };
       })
       .catch((err) => {
-        appendLog(options?.runId, "error", "decider_error", `Decider ${deciderNames[j]} failed`, { j, name: deciderNames[j], message: err instanceof Error ? err.message : String(err) });
+        appendLog(options?.runId, "error", "evaluator_error", `Evaluator ${evaluatorNames[j]} failed`, { j, name: evaluatorNames[j], message: err instanceof Error ? err.message : String(err) });
         return { status: "rejected" as const, reason: err };
       }),
   );
   const settled = await Promise.all(tasks);
-  const votes = settled.filter((s) => s.status === "fulfilled").map((s) => (s as { status: "fulfilled"; value: DeciderVote }).value);
-  console.info("runDeciders: completed");
-  appendLog(options?.runId, "deciders", "complete", "All deciders completed", { K, deciders: deciderNames });
+  const votes = settled.filter((s) => s.status === "fulfilled").map((s) => (s as { status: "fulfilled"; value: EvaluatorVote }).value);
+  console.info("runEvaluators: completed");
+  appendLog(options?.runId, "evaluators", "complete", "All evaluators completed", { K, evaluators: evaluatorNames });
   return votes;
 }
 
 export function aggregateIRV(
   candidates: GeneratorOutput[],
-  votes: DeciderVote[],
+  votes: EvaluatorVote[],
 ): AggregateDecision {
   const N = candidates.length;
   const acceptableCounts = new Array<number>(N).fill(0);
@@ -915,7 +921,7 @@ export function aggregateIRV(
       acceptableCounts,
       winnerIndex: null,
       wasTieBroken: false,
-      rationale: ["No candidate reached acceptability threshold (>=2 deciders)"],
+       rationale: ["No candidate reached acceptability threshold (>=2 evaluators)"],
     };
   }
   // Prepare ballots restricted to eligible set
@@ -967,7 +973,7 @@ export function aggregateIRV(
 export async function analyzeWithIRV(
   file: File,
   originalPrompt: string,
-  opts?: { generators?: number; deciders?: number; generatorModel?: string; deciderModel?: string; temperature?: number; maxOutputTokens?: number; runId?: string },
+  opts?: { generators?: number; evaluators?: number; generatorModel?: string; evaluatorModel?: string; temperature?: number; maxOutputTokens?: number; runId?: string },
 ): Promise<
   | {
       type: "success";
@@ -976,7 +982,7 @@ export async function analyzeWithIRV(
         candidates: GeneratorOutput[];
         generatorNames: string[];
         averageRankings: { index: number; name: string; avg: number | null; votes: number }[];
-        meta: AggregateDecision & { chosenIndex: number; deciderRankingSnapshots: number[][] };
+        meta: AggregateDecision & { chosenIndex: number; evaluatorRankingSnapshots: number[][] };
       };
     }
   | {
@@ -986,7 +992,7 @@ export async function analyzeWithIRV(
         candidates: GeneratorOutput[];
         generatorNames: string[];
         averageRankings: { index: number; name: string; avg: number | null; votes: number }[];
-        meta: { acceptableCounts: number[]; deciderRankingSnapshots: number[][]; reason: string };
+        meta: { acceptableCounts: number[]; evaluatorRankingSnapshots: number[][]; reason: string };
       };
     }
 > {
@@ -999,9 +1005,9 @@ export async function analyzeWithIRV(
     model: opts?.generatorModel || "gemini-2.5-flash",
     runId: opts?.runId,
   });
-  const votes = await runDeciders(originalPrompt, gens, { deciders: opts?.deciders, model: opts?.deciderModel || "gemini-2.5-flash", runId: opts?.runId });
-  const deciderRankingSnapshots = votes.map((v) => v.ranking);
-  appendLog(opts?.runId, "aggregation", "snapshots", "Collected decider rankings", { deciderRankingSnapshots });
+  const votes = await runEvaluators(originalPrompt, gens, { evaluators: opts?.evaluators, model: opts?.evaluatorModel || "gemini-2.5-flash", runId: opts?.runId });
+  const evaluatorRankingSnapshots = votes.map((v) => v.ranking);
+  appendLog(opts?.runId, "aggregation", "snapshots", "Collected evaluator rankings", { evaluatorRankingSnapshots });
   const agg = aggregateIRV(gens, votes);
   const elapsedMs = Date.now() - start;
   console.info("analyzeWithIRV: aggregation", { elapsedMs, winnerIndex: agg.winnerIndex, acceptableCounts: agg.acceptableCounts });
@@ -1020,11 +1026,11 @@ export async function analyzeWithIRV(
     try {
       const N = gens.length;
       generatorNames = Array.from({ length: N }).map((_, i) => agentNameFrom(G_NAMES, i));
-      // Build decider name list from count of snapshots
-      const K = deciderRankingSnapshots.length;
-      const deciderNames = Array.from({ length: K }).map((_, j) => agentNameFrom(D_NAMES, j));
-      const deciderSummaries = deciderRankingSnapshots.map((ranking, j) => {
-        const name = deciderNames[j];
+      // Build evaluator name list from count of snapshots
+      const K = evaluatorRankingSnapshots.length;
+      const evaluatorNames = Array.from({ length: K }).map((_, j) => agentNameFrom(E_NAMES, j));
+      const evaluatorSummaries = evaluatorRankingSnapshots.map((ranking, j) => {
+        const name = evaluatorNames[j];
         const ordered = ranking.map((idx) => generatorNames[idx]);
         const rankedLabel = ordered.join(", ");
         const unrankedNames = generatorNames.filter((_, idx) => !ranking.includes(idx));
@@ -1033,7 +1039,7 @@ export async function analyzeWithIRV(
       // Compute average rank per generator across ballots that include it
       const sumRanks: number[] = Array.from({ length: N }, () => 0);
       const countRanks: number[] = Array.from({ length: N }, () => 0);
-      for (const r of deciderRankingSnapshots) {
+      for (const r of evaluatorRankingSnapshots) {
         r.forEach((idx, pos) => {
           if (idx >= 0 && idx < N) {
             sumRanks[idx] += pos + 1; // 1-based for readability
@@ -1057,9 +1063,9 @@ export async function analyzeWithIRV(
       const avgSummary = avgRankingsSorted
         .map((r) => `${r.name}: ${r.avg === null ? "—" : r.avg.toFixed(2)} (${r.votes} votes)`) 
         .join("; ");
-      appendLog(opts?.runId, "result", "summary", "Summary of decider rankings and averages", {
+      appendLog(opts?.runId, "result", "summary", "Summary of evaluator rankings and averages", {
         winner: generatorNames[agg.winnerIndex],
-        deciders: deciderSummaries,
+        evaluators: evaluatorSummaries,
         averages: avgSummary,
       });
       averageRankings = avgRankingsRaw;
@@ -1078,7 +1084,7 @@ export async function analyzeWithIRV(
         meta: {
           ...agg,
           chosenIndex: agg.winnerIndex,
-          deciderRankingSnapshots,
+          evaluatorRankingSnapshots,
         },
       },
     };
@@ -1098,7 +1104,7 @@ export async function analyzeWithIRV(
     generatorNames = Array.from({ length: N }).map((_, i) => agentNameFrom(G_NAMES, i));
     const sumRanks: number[] = Array.from({ length: N }, () => 0);
     const countRanks: number[] = Array.from({ length: N }, () => 0);
-    for (const r of deciderRankingSnapshots) {
+    for (const r of evaluatorRankingSnapshots) {
       r.forEach((idx, pos) => {
         if (idx >= 0 && idx < N) {
           sumRanks[idx] += pos + 1;
@@ -1125,7 +1131,7 @@ export async function analyzeWithIRV(
       averageRankings,
       meta: {
         acceptableCounts: agg.acceptableCounts,
-        deciderRankingSnapshots,
+        evaluatorRankingSnapshots,
         reason: agg.hasAnyAcceptable ? "No consensus among eligible candidates" : "No acceptable candidates",
       },
     },

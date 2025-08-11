@@ -66,10 +66,10 @@ Guidance:
 `;
 
 // --------------------
-// Decider prompt and builder
+// Evaluator prompt and builder
 // --------------------
 
-export const DECIDER_PROMPT = `You are an evaluator. You do NOT have access to the video. Judge multiple candidate outputs generated from the same video and the same instructions (the ASK).
+export const EVALUATOR_PROMPT = `You are an evaluator. You do NOT have access to the video. Judge multiple candidate outputs generated from the same video and the same instructions (the ASK).
 
 Your tasks:
 1) Ranked-choice (IRV) ballot: Provide a strict ranked list of ONLY acceptable candidates, best to worst.
@@ -119,12 +119,12 @@ Constraints:
 - When relevant, note cross-candidate observations in issues (e.g., "cross-candidate: only this candidate adds 'X'", "cross-candidate: omits step present in most others").
 - Judge based on the ASK and the candidate texts only; do not infer unseen video details.`;
 
-export function buildDeciderPrompt(originalPrompt: string, candidates: Array<{ index: number; text: string }>): string {
+export function buildEvaluatorPrompt(originalPrompt: string, candidates: Array<{ index: number; text: string }>): string {
   const ask = originalPrompt;
   const blocks = candidates
     .map((c) => `[` + c.index + `]\n` + c.text)
     .join("\n\n");
-  return DECIDER_PROMPT.replace("ORIGINAL_PROMPT_TEXT", ask).replace("CANDIDATES_BLOCKS", blocks);
+  return EVALUATOR_PROMPT.replace("ORIGINAL_PROMPT_TEXT", ask).replace("CANDIDATES_BLOCKS", blocks);
 }
 
 

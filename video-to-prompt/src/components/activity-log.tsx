@@ -56,19 +56,19 @@ export function ActivityLog({ runId, initial = [], collapsedByDefault = false }:
   const rows = useMemo(() => {
     // Derive simple progress context
     let totalGenerators = 0;
-    let totalDeciders = 0;
+    let totalEvaluators = 0;
     let completedGenerators = 0; // derived via seenGen
-    let completedDeciders = 0; // derived via seenDec
+    let completedEvaluators = 0; // derived via seenDec
     const seenGen: Set<number> = new Set();
     const seenDec: Set<number> = new Set();
 
     const derived = events.map((e) => ({ e }));
     // Capture name lists if provided
     let generatorNames: string[] | null = null;
-    let deciderNames: string[] | null = null;
+    let evaluatorNames: string[] | null = null;
     for (const { e } of derived) {
       if (e.phase === "generators" && e.type === "start") totalGenerators = (e.data?.N as number) || totalGenerators;
-      if (e.phase === "deciders" && e.type === "start") totalDeciders = (e.data?.K as number) || totalDeciders;
+      if (e.phase === "evaluators" && e.type === "start") totalEvaluators = (e.data?.K as number) || totalEvaluators;
       if (
         e.phase === "generators" &&
         e.type === "start"
@@ -78,11 +78,11 @@ export function ActivityLog({ runId, initial = [], collapsedByDefault = false }:
         if (Array.isArray(gens)) generatorNames = (gens as unknown[]).map((v) => String(v));
       }
       if (
-        e.phase === "deciders" &&
+        e.phase === "evaluators" &&
         e.type === "start" &&
-        Array.isArray((e.data as Record<string, unknown>)?.deciders as unknown[])
+        Array.isArray((e.data as Record<string, unknown>)?.evaluators as unknown[])
       ) {
-        deciderNames = (e.data as Record<string, unknown>).deciders as string[];
+        evaluatorNames = (e.data as Record<string, unknown>).evaluators as string[];
       }
       if (e.phase === "generators" && e.type === "generator_done") {
         const idx = Number(e.data?.index);
@@ -91,11 +91,11 @@ export function ActivityLog({ runId, initial = [], collapsedByDefault = false }:
           completedGenerators = seenGen.size;
         }
       }
-      if (e.phase === "deciders" && e.type === "vote") {
+      if (e.phase === "evaluators" && e.type === "vote") {
         const j = Number(e.data?.j);
         if (!Number.isNaN(j) && !seenDec.has(j)) {
           seenDec.add(j);
-          completedDeciders = seenDec.size;
+          completedEvaluators = seenDec.size;
         }
       }
     }
@@ -136,18 +136,18 @@ export function ActivityLog({ runId, initial = [], collapsedByDefault = false }:
         const name = (e.data as Record<string, unknown>)?.name as string | undefined;
         const len = e.data?.length as number | undefined;
         message = `Generator ${name ?? index ?? "?"} completed (${seenGen.size}/${n})${typeof len === "number" ? `, ${len} chars` : ""}`;
-      } else if (e.phase === "deciders" && e.type === "start") {
+      } else if (e.phase === "evaluators" && e.type === "start") {
         const k = e.data?.K as number | undefined;
         const model = e.data?.model as string | undefined;
         const d = e.data as Record<string, unknown> | undefined;
-        const decsVal = d?.deciders as unknown;
+        const decsVal = d?.evaluators as unknown;
         const list = Array.isArray(decsVal) ? (decsVal as unknown[]).map((v) => String(v)).join(", ") : null;
-        message = `Starting ${k ?? "?"} deciders${model ? ` (${model})` : ""}${list ? ` — ${list}` : ""}`;
-      } else if (e.phase === "deciders" && e.type === "vote") {
+        message = `Starting ${k ?? "?"} evaluators${model ? ` (${model})` : ""}${list ? ` — ${list}` : ""}`;
+      } else if (e.phase === "evaluators" && e.type === "vote") {
         const j = e.data?.j as number | undefined;
         const decName = (e.data as Record<string, unknown>)?.name as string | undefined;
         const r = renderRanking(e.data?.ranking);
-        message = `Decider ${decName ?? j ?? "?"} ranking${r ? ": " + r : " returned"} (${seenDec.size}/${totalDeciders || "?"})`;
+        message = `Evaluator ${decName ?? j ?? "?"} ranking${r ? ": " + r : " returned"} (${seenDec.size}/${totalEvaluators || "?"})`;
       } else if (e.phase === "aggregation" && e.type === "acceptable_counts") {
         const r = renderAcceptableCounts(e.data?.acceptableCounts);
         message = `Acceptable counts${r ? ": " + r : " computed"}`;
@@ -156,10 +156,10 @@ export function ActivityLog({ runId, initial = [], collapsedByDefault = false }:
         const wName = typeof w === "number" && generatorNames ? generatorNames[w] : undefined;
         message = `Winner selected: ${wName ?? (typeof w === "number" ? `candidate ${w}` : "?")}`;
       } else if (e.phase === "aggregation" && e.type === "snapshots") {
-        const snaps = e.data?.deciderRankingSnapshots as unknown;
-        const lines = Array.isArray(snaps) ? snaps.map((r, i) => `D${i}: ${renderRanking(r) ?? ""}`).join("\n") : null;
+        const snaps = e.data?.evaluatorRankingSnapshots as unknown;
+        const lines = Array.isArray(snaps) ? snaps.map((r, i) => `E${i}: ${renderRanking(r) ?? ""}`).join("\n") : null;
         details = lines ?? null;
-        message = `Collected decider rankings`;
+        message = `Collected evaluator rankings`;
       } else if (e.phase === "result" && e.type === "success_meta") {
         const ms = e.data?.elapsedMs as number | undefined;
         message = `Preparing success response${typeof ms === "number" ? ` (${(ms / 1000).toFixed(1)}s)` : ""}`;
