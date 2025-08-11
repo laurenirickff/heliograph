@@ -115,31 +115,33 @@ export default function Home() {
         </Card>
       )}
 
-      <Card className="p-4 w-full mt-3 relative z-10">
-        <div className="space-y-1">
-          <div>
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-medium">Step 2: Prompt</h2>
-              <TemplateSelector
-                inline
-                label="Template"
-                value={template}
-                onChange={(t) => {
-                  // Update template first, then seed prompt only if user hasn't edited or when switching presets
-                  setTemplate(t);
-                  setPromptText(getPresetText(t));
-                }}
-              />
+      {state === "idle" && (
+        <Card className="p-4 w-full mt-3 relative z-10">
+          <div className="space-y-1">
+            <div>
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-medium">Step 2: Prompt</h2>
+                <TemplateSelector
+                  inline
+                  label="Template"
+                  value={template}
+                  onChange={(t) => {
+                    // Update template first, then seed prompt only if user hasn't edited or when switching presets
+                    setTemplate(t);
+                    setPromptText(getPresetText(t));
+                  }}
+                />
+              </div>
+              <p className="text-sm leading-snug text-muted-foreground">Pick a template and adjust the prompt as needed.</p>
             </div>
-            <p className="text-sm leading-snug text-muted-foreground">Pick a template and adjust the prompt as needed.</p>
+            <ControlsSimple
+              showLabel={false}
+              initialPrompt={promptText}
+              onChange={({ promptText }) => setPromptText(promptText)}
+            />
           </div>
-          <ControlsSimple
-            showLabel={false}
-            initialPrompt={promptText}
-            onChange={({ promptText }) => setPromptText(promptText)}
-          />
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {state === "idle" && (
         <Card className="p-4 w-full mt-6 relative z-10">
