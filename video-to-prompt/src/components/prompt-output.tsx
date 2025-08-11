@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 
 type Props = {
   prompt: string;
+  filename?: string;
 };
 
-export function PromptOutput({ prompt }: Props) {
+export function PromptOutput({ prompt, filename = "prompt.txt" }: Props) {
   const [copied, setCopied] = useState(false);
 
   const onCopy = async () => {
@@ -22,7 +23,7 @@ export function PromptOutput({ prompt }: Props) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "prompt.txt";
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
   };

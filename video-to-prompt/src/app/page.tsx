@@ -10,6 +10,8 @@ import { ControlsSimple } from "@/components/controls-simple";
 import { getPresetText } from "@/lib/presets";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SolarCorner } from "@/components/solar-corner";
 
@@ -24,8 +26,14 @@ export default function Home() {
   >("browser-use");
   const [state, setState] = useState<"idle" | "uploading" | "processing" | "complete">("idle");
   const [prompt, setPrompt] = useState("");
+  type Meta = { reason?: string } | null;
+  const [meta, setMeta] = useState<Meta>(null);
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [generators, setGenerators] = useState<number>(5);
+  const [deciders, setDeciders] = useState<number>(3);
+  const [generatorModel, setGeneratorModel] = useState<string>("gemini-2.5-flash");
+  const [deciderModel, setDeciderModel] = useState<string>("gemini-2.5-flash");
   // Keep the inline SolarCorner a fixed, stable size so typography changes
   // don't alter the icon dimensions or alignment.
   useEffect(() => {
@@ -41,6 +49,10 @@ export default function Home() {
     formData.append("video", file);
     formData.append("preset", template);
     formData.append("promptText", promptText);
+    formData.append("generators", String(generators));
+    formData.append("deciders", String(deciders));
+    formData.append("generatorModel", generatorModel);
+    formData.append("deciderModel", deciderModel);
 
     setState("processing");
     const response = await fetch("/api/analyze", {
@@ -51,9 +63,11 @@ export default function Home() {
     const data = await response.json();
     if (response.ok) {
       setPrompt(data.prompt);
+      setMeta(data.meta || null);
       setState("complete");
     } else {
       setPrompt(`Error: ${data.error || "Unknown error"}`);
+      setMeta(null);
       setState("complete");
     }
   };
@@ -67,7 +81,7 @@ export default function Home() {
           <div className="flex items-center gap-3 md:gap-4" style={{
             // CSS var used by SolarCorner inline scaling; updated by effect below
             // Fallback keeps a sensible size before hydration
-            ['--logo-circle-d' as any]: '150px'
+            ['--logo-circle-d' as unknown as string]: '150px'
           }} id="header-row">
             <SolarCorner variant="inline" />
             <div className="flex-1" id="header-text">
@@ -130,7 +144,65 @@ export default function Home() {
       {state === "idle" && (
         <Card className="p-4 w-full mt-6 relative z-10">
           <div className="mb-3">
-            <h2 className="text-base font-medium">Step 3: Generate your result</h2>
+            <h2 className="text-base font-medium">Step 3: Advanced settings</h2>
+            <p className="text-sm text-muted-foreground">Configure the number of generators and deciders, and choose models.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="generators">Generators (N)</Label>
+              <input
+                id="generators"
+                type="number"
+                min={1}
+                max={10}
+                value={generators}
+                onChange={(e) => setGenerators(Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+                className="w-full rounded border px-3 py-2 text-sm bg-transparent"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="deciders">Deciders (K)</Label>
+              <input
+                id="deciders"
+                type="number"
+                min={1}
+                max={7}
+                value={deciders}
+                onChange={(e) => setDeciders(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
+                className="w-full rounded border px-3 py-2 text-sm bg-transparent"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Generator model</Label>
+              <Select value={generatorModel} onValueChange={setGeneratorModel}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini-2.5-flash" subtitle="Video-capable, fast">gemini-2.5-flash</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Decider model</Label>
+              <Select value={deciderModel} onValueChange={setDeciderModel}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gemini-2.5-flash" subtitle="Fast">gemini-2.5-flash</SelectItem>
+                  <SelectItem value="gemini-1.5-pro" subtitle="Higher reasoning, text-only">gemini-1.5-pro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {state === "idle" && (
+        <Card className="p-4 w-full mt-6 relative z-10">
+          <div className="mb-3">
+            <h2 className="text-base font-medium">Step 4: Generate your result</h2>
             <p className="text-sm text-muted-foreground">We’ll process the video and return a ready-to-use prompt you can copy.</p>
           </div>
           <div className="flex justify-end">
@@ -146,7 +218,7 @@ export default function Home() {
         {state === "processing" && <ProcessingView />}
         {state === "complete" && (
           <div className="w-full space-y-4">
-            <PromptOutput prompt={prompt} />
+            <PromptOutput prompt={prompt} filename={meta?.reason ? "all-candidates.txt" : "prompt.txt"} />
           </div>
         )}
       </div>

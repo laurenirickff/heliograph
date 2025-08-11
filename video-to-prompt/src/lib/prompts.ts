@@ -59,4 +59,59 @@ Guidance:
 - Ensure the top-level is a JSON array only; do not include markdown or commentary outside the JSON.
 `;
 
+// --------------------
+// Decider prompt and builder
+// --------------------
+
+export const DECIDER_PROMPT = `You are an evaluator. You do NOT have access to the video. Judge multiple candidate outputs generated from the same video and the same instructions (the ASK).
+
+Your tasks:
+1) Ranked-choice (IRV) ballot: Provide a strict ranked list of ONLY acceptable candidates, best to worst.
+2) Diagnostics: For each candidate, list brief strengths/issues that reference the ASK when applicable.
+
+Key definitions:
+- Acceptable: materially adheres to the ASK, covers the important items emphasized by the ASK, contains no major contradictions with the ASK, and is internally consistent. Minor stylistic differences are fine.
+- Unacceptable: misses a clearly important requirement from the ASK; contradicts itself or the ASK; introduces instructions the ASK did not authorize; fabricates constraints not present in the ASK; largely off-topic.
+- Ambiguity handling: When the ASK is ambiguous, prefer candidates that make reasonable, clearly stated interpretations without contradicting the ASK. Do not invent facts beyond what a reasonable reading of the ASK permits.
+- Cross-candidate consistency: Differences in style/ordering are irrelevant. Flag only material conflicts on ASK must-haves.
+
+Inputs:
+- ASK (exact instructions shown to generators):
+<<<ASK_START
+ORIGINAL_PROMPT_TEXT
+ASK_END>>>
+
+- Candidates (free-form). Indexing starts at 0:
+<<<CANDIDATES_START
+CANDIDATES_BLOCKS
+CANDIDATES_END>>>
+
+Voting rules (ranked-choice / IRV compliant):
+- Do NOT rank any candidate you consider unacceptable.
+- If acceptable candidates exist:
+  - Include ALL acceptable indices in the ranking as a strict, tie-free order (best to worst).
+
+Output format (STRICT JSON; no prose outside JSON):
+{
+  "ranking": number[],
+  "perCandidate": Array<{
+    "index": number,
+    "strengths": string[],
+    "issues": string[]
+  }>
+}
+
+Constraints:
+- Return ONLY valid JSON matching the schema. No markdown or explanations outside JSON.
+- Keep strengths/issues concise and reference ASK phrases where useful (e.g., "covers ASK: '...'", "misses ASK: '...'").
+- Judge based on the ASK and the candidate texts only; do not infer unseen video details.`;
+
+export function buildDeciderPrompt(originalPrompt: string, candidates: Array<{ index: number; text: string }>): string {
+  const ask = originalPrompt;
+  const blocks = candidates
+    .map((c) => `[` + c.index + `]\n` + c.text)
+    .join("\n\n");
+  return DECIDER_PROMPT.replace("ORIGINAL_PROMPT_TEXT", ask).replace("CANDIDATES_BLOCKS", blocks);
+}
+
 
