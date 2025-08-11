@@ -4,6 +4,8 @@
 export const EXTRACTION_PROMPT_STRICT = `
 Extract browser automation steps from this workflow video using BOTH visual cues and narration.
 
+Context: The recording comes from a specific customer/project. Generalize any customer-specific identifiers (names, emails, domains, company names, account IDs) into neutral placeholders or role-based references. Prefer phrasing like "search the customer's name" instead of "search Stan Smith" unless the exact literal value is clearly required to complete the workflow.
+
 You MUST output a pure JSON array (no surrounding prose) where each item matches this schema exactly:
 {
   "action": "navigate" | "click" | "type" | "wait" | "verify" | "conditional" | "select",
@@ -25,10 +27,13 @@ Strict requirements:
 - Use the exact key names above (narrationContext, waitCondition). Do NOT use synonyms like "context", "note", or "waitFor".
 - Omit unknown fields entirely rather than using null or empty strings.
 - Prefer specific, concise target.description labels (e.g., "Take Action button").
+- Generalize customer-specific values in fields like value, narrationContext, and businessLogic to placeholders (e.g., "the customer's email") unless a literal value is explicitly necessary.
 `;
 
 export const EXTRACTION_PROMPT_FLEX = `
 Extract browser automation steps from this workflow video using BOTH visual cues and narration.
+
+Context: The recording comes from a specific customer/project. Generalize any customer-specific identifiers (names, emails, domains, company names, account IDs) into neutral placeholders or role-based references. Prefer phrasing like "search the customer's name" instead of "search Stan Smith" unless the exact literal value is clearly required to complete the workflow.
 
 You MUST output a pure JSON array (no surrounding prose). Be permissive in capturing nuance and ambiguity. For each step, include keys that help downstream tools reason well. Recommended keys (optional, not exhaustive):
 {
@@ -57,6 +62,7 @@ You MUST output a pure JSON array (no surrounding prose). Be permissive in captu
 Guidance:
 - Keep outputs concise but informative. Use camelCase keys. Avoid nulls/empty strings; omit unknowns instead.
 - Ensure the top-level is a JSON array only; do not include markdown or commentary outside the JSON.
+- When including example text or values, generalize customer-specific details to placeholders (e.g., "customer account ID") unless the literal value is essential to achieve the demonstrated outcome.
 `;
 
 // --------------------
@@ -71,9 +77,14 @@ Your tasks:
 
 Key definitions:
 - Acceptable: materially adheres to the ASK, covers the important items emphasized by the ASK, contains no major contradictions with the ASK, and is internally consistent. Minor stylistic differences are fine.
-- Unacceptable: misses a clearly important requirement from the ASK; contradicts itself or the ASK; introduces instructions the ASK did not authorize; fabricates constraints not present in the ASK; largely off-topic.
+- Unacceptable: misses a clearly important requirement from the ASK; contradicts itself or the ASK; introduces instructions the ASK did not authorize; fabricates constraints not present in the ASK; largely off-topic; or is a material outlier versus other candidates in a way that is not supported by the ASK.
 - Ambiguity handling: When the ASK is ambiguous, prefer candidates that make reasonable, clearly stated interpretations without contradicting the ASK. Do not invent facts beyond what a reasonable reading of the ASK permits.
-- Cross-candidate consistency: Differences in style/ordering are irrelevant. Flag only material conflicts on ASK must-haves.
+
+Cross-candidate consistency rules:
+- Compare each candidate not only to the ASK but also to the other candidates. Exact matches are NOT expected. Differences in tone, ordering, naming, and formatting are irrelevant.
+- Red flag (addition): If a candidate introduces a material step/fact/constraint that is NOT supported by the ASK and is NOT present in most other candidates, treat it as likely fabricated and mark the candidate unacceptable unless there is clear ASK support.
+- Red flag (omission): If a candidate omits a material element that the ASK requires, or that appears in most other candidates and is compatible with the ASK, treat that omission as a serious issue likely rendering the candidate unacceptable.
+- Consensus as signal, not ground truth: Use cross-candidate agreement as a reliability signal to detect outliers, but the ASK remains the source of truth. Accept genuine alternative interpretations only when consistent with the ASK.
 
 Inputs:
 - ASK (exact instructions shown to generators):
@@ -90,6 +101,7 @@ Voting rules (ranked-choice / IRV compliant):
 - Do NOT rank any candidate you consider unacceptable.
 - If acceptable candidates exist:
   - Include ALL acceptable indices in the ranking as a strict, tie-free order (best to worst).
+  - Exclude any candidate that triggers a cross-candidate red flag (fabricated-looking addition or omission of a material element) unless the ASK clearly permits that divergence.
 
 Output format (STRICT JSON; no prose outside JSON):
 {
@@ -104,6 +116,7 @@ Output format (STRICT JSON; no prose outside JSON):
 Constraints:
 - Return ONLY valid JSON matching the schema. No markdown or explanations outside JSON.
 - Keep strengths/issues concise and reference ASK phrases where useful (e.g., "covers ASK: '...'", "misses ASK: '...'").
+- When relevant, note cross-candidate observations in issues (e.g., "cross-candidate: only this candidate adds 'X'", "cross-candidate: omits step present in most others").
 - Judge based on the ASK and the candidate texts only; do not infer unseen video details.`;
 
 export function buildDeciderPrompt(originalPrompt: string, candidates: Array<{ index: number; text: string }>): string {

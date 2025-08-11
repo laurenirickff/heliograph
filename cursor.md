@@ -34,6 +34,49 @@ video-to-prompt/
 └── .env.local              # GOOGLE_AI_API_KEY
 ```
 
+## Dev runbook
+
+### Clean restart and start
+
+```bash
+# Kill anything on 3000 and any lingering Next dev processes
+(lsof -ti tcp:3000 || true) | xargs -r kill -9; pkill -f "next dev" || true; pkill -f "/node .*next" || true
+
+# Start dev server
+npm run dev
+```
+
+- If port 3000 is in use, Next.js will automatically use the next available port (e.g., 3001). Use the URL printed by Next.js.
+- To force a specific port: `PORT=3001 npm run dev`.
+
+### Healthcheck
+
+```bash
+curl -sSf http://localhost:3000/api/healthcheck
+```
+
+### Activity log SSE (dev diagnostics)
+
+```bash
+# Stream first lines to verify
+curl -sN http://localhost:3000/api/logs/test-run/stream | head -n 10 | cat
+
+# Emit a test event (dev-only)
+curl -s -X POST "http://localhost:3000/api/logs/test-run/emit" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phase": "generators",
+    "type": "start",
+    "message": "dev emit test",
+    "data": { "N": 3, "model": "gemini-2.5-flash", "generators": ["strict", "flex", "shadow"] }
+  }'
+```
+
+### Environment
+
+- Create `.env.local` with `GEMINI_API_KEY=...` (required for video analysis).
+- The Gemini client is initialized at runtime; missing keys will error when an analysis call is made.
+
 ## Implementation
 
 ### 1. Video Analysis (`lib/gemini.ts`)

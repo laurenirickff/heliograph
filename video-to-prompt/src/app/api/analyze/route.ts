@@ -1,4 +1,5 @@
 import { analyzeWithIRV, generateTextWithVideo } from "@/lib/gemini";
+import { appendLog } from "@/lib/run-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ export async function POST(request: Request) {
   const deciderModel = (formData.get("deciderModel") as string) || undefined;
   const temperature = formData.get("temperature");
   const maxOutputTokens = formData.get("maxOutputTokens");
+  const runId = (formData.get("runId") as string) || undefined;
 
   if (!video || !(video instanceof File)) {
     return Response.json({ error: "Missing video file" }, { status: 400 });
@@ -37,12 +39,14 @@ export async function POST(request: Request) {
     // If no advanced settings provided, keep legacy single-shot behavior for backward compat
     const hasAdvanced = Boolean(generators || deciders || generatorModel || deciderModel || temperature || maxOutputTokens);
     if (!hasAdvanced) {
+      appendLog(runId, "init", "single", "Single-shot generation started");
       const prompt = await generateTextWithVideo(video, effectivePrompt);
+      appendLog(runId, "result", "single_done", "Single-shot generation completed");
       return Response.json({ prompt });
     }
 
     // New IRV pipeline
-    const result = await analyzeWithIRV(video, effectivePrompt, {
+    appendLog(runId, "init", "run_started", "IRV analysis started", {
       generators: generators ? Number(generators) : undefined,
       deciders: deciders ? Number(deciders) : undefined,
       generatorModel,
@@ -51,14 +55,48 @@ export async function POST(request: Request) {
       maxOutputTokens: maxOutputTokens ? Number(maxOutputTokens) : undefined,
     });
 
+    const result = await analyzeWithIRV(video, effectivePrompt, {
+      generators: generators ? Number(generators) : undefined,
+      deciders: deciders ? Number(deciders) : undefined,
+      generatorModel,
+      deciderModel,
+      temperature: temperature ? Number(temperature) : undefined,
+      maxOutputTokens: maxOutputTokens ? Number(maxOutputTokens) : undefined,
+      runId,
+    });
+
     if (result.type === "success") {
-      return Response.json({ prompt: result.data.prompt, meta: result.data.meta });
+      appendLog(runId, "result", "success", "IRV analysis completed with winner", {
+        chosenIndex: result.data.meta.chosenIndex,
+        acceptableCounts: result.data.meta.acceptableCounts,
+        wasTieBroken: result.data.meta.wasTieBroken,
+      });
+      return Response.json({
+        prompt: result.data.prompt,
+        meta: result.data.meta,
+        candidates: result.data.candidates,
+        generatorNames: result.data.generatorNames,
+        averageRankings: result.data.averageRankings,
+      });
     } else {
       // Non-consensus: return 200 with concatenated outputs; UI will present download
-      return Response.json({ prompt: result.data.prompt, meta: result.data.meta, error: "No consensus" });
+      appendLog(runId, "result", "fallback", "IRV analysis completed without consensus", {
+        acceptableCounts: result.data.meta.acceptableCounts,
+        reason: result.data.meta.reason,
+      });
+      return Response.json({
+        prompt: result.data.prompt,
+        meta: result.data.meta,
+        candidates: result.data.candidates,
+        generatorNames: result.data.generatorNames,
+        averageRankings: result.data.averageRankings,
+        error: "No consensus",
+      });
     }
   } catch (error) {
     console.error("/api/analyze failed:", error);
+    const messageStr = error instanceof Error ? error.message : String(error);
+    appendLog(runId, "error", "exception", "Analyze failed", { message: messageStr });
     const isProd = process.env.NODE_ENV === "production";
     const message = !isProd
       ? (error instanceof Error ? error.message : String(error))

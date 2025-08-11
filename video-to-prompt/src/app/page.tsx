@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { SolarCorner } from "@/components/solar-corner";
+import { ActivityLog } from "@/components/activity-log";
+import { SummaryCard } from "@/components/summary-card";
 
 const fraunces = Fraunces({ subsets: ["latin"], weight: ["600", "700"], display: "swap" });
 
@@ -26,6 +28,10 @@ export default function Home() {
   >("browser-use");
   const [state, setState] = useState<"idle" | "uploading" | "processing" | "complete">("idle");
   const [prompt, setPrompt] = useState("");
+  const [allCandidates, setAllCandidates] = useState<{ index: number; text: string }[] | null>(null);
+  const [generatorNames, setGeneratorNames] = useState<string[] | null>(null);
+  const [averageRankings, setAverageRankings] = useState<{ index: number; name: string; avg: number | null; votes: number }[] | null>(null);
+  const [runId, setRunId] = useState<string | null>(null);
   type Meta = { reason?: string } | null;
   const [meta, setMeta] = useState<Meta>(null);
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
@@ -42,8 +48,20 @@ export default function Home() {
     rowEl.style.setProperty("--logo-circle-d", `150px`);
   }, []);
 
+  const downloadText = (content: string, name: string) => {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleUpload = async (file: File) => {
     setState("uploading");
+    const newRunId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    setRunId(newRunId);
 
     const formData = new FormData();
     formData.append("video", file);
@@ -53,6 +71,7 @@ export default function Home() {
     formData.append("deciders", String(deciders));
     formData.append("generatorModel", generatorModel);
     formData.append("deciderModel", deciderModel);
+    formData.append("runId", newRunId);
 
     setState("processing");
     const response = await fetch("/api/analyze", {
@@ -64,10 +83,16 @@ export default function Home() {
     if (response.ok) {
       setPrompt(data.prompt);
       setMeta(data.meta || null);
+      setAllCandidates(Array.isArray(data.candidates) ? data.candidates : null);
+      setGeneratorNames(Array.isArray(data.generatorNames) ? data.generatorNames : null);
+      setAverageRankings(Array.isArray(data.averageRankings) ? data.averageRankings : null);
       setState("complete");
     } else {
       setPrompt(`Error: ${data.error || "Unknown error"}`);
       setMeta(null);
+      setAllCandidates(null);
+      setGeneratorNames(null);
+      setAverageRankings(null);
       setState("complete");
     }
   };
@@ -217,10 +242,75 @@ export default function Home() {
 
       {/* Processing / Output occupy full width below steps */}
       <div className="mt-6">
-        {state === "processing" && <ProcessingView />}
+        {state === "processing" && (
+          <div className="space-y-3">
+            <ProcessingView />
+            {runId && <SummaryCard runId={runId} />}
+            {runId && <ActivityLog runId={runId} />}
+          </div>
+        )}
         {state === "complete" && (
           <div className="w-full space-y-4">
+            {/* Primary actions at top-left */}
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => downloadText(prompt, "best-result.txt")}
+              >
+                Download Best Result
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const combined = `Prompt sent to agent:\n\n${promptText}\n\n---\n\nBest result:\n\n${prompt}`;
+                  downloadText(combined, "best-result-and-prompt.txt");
+                }}
+              >
+                Download Best Result and Prompt
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  // Build an "all results and prompt" text file
+                  const header = `Prompt sent to agent:\n\n${promptText}`;
+                  const averagesSection = Array.isArray(averageRankings)
+                    ? `\n\nAverage rankings:\n${averageRankings
+                        .slice()
+                        .sort((a, b) => {
+                          const av = a.avg ?? Infinity;
+                          const bv = b.avg ?? Infinity;
+                          return av - bv;
+                        })
+                        .map((r) => `- ${r.name}: ${r.avg === null ? "—" : r.avg.toFixed(2)} (${r.votes} votes)`) 
+                        .join("\n")}`
+                    : "";
+                  const divider = "\n\n==============================\n\n";
+                  const candidatesSection = Array.isArray(allCandidates) && Array.isArray(generatorNames)
+                    ? allCandidates
+                        .slice()
+                        .sort((a, b) => a.index - b.index)
+                        .map((c) => {
+                          const name = generatorNames?.[c.index] ?? `Candidate ${c.index}`;
+                          const avg = averageRankings?.find((r) => r.index === c.index)?.avg ?? null;
+                          const votes = averageRankings?.find((r) => r.index === c.index)?.votes ?? 0;
+                          const scoreLine = avg === null ? "—" : `${avg.toFixed(2)} (${votes} votes)`;
+                          return `${name} [${c.index}] — Avg rank: ${scoreLine}\n\n${c.text}`;
+                        })
+                        .join(divider)
+                    : `Best result:\n\n${prompt}`;
+                  const combined = `${header}${averagesSection}\n\n---\n\nAll results:\n\n${candidatesSection}`;
+                  downloadText(combined, "all-results-and-prompt.txt");
+                }}
+              >
+                Download All Results and Prompt
+              </Button>
+            </div>
+
+            {/* Summary section above Best Result; title within card */}
+            {runId && <SummaryCard runId={runId} />}
+            {/* Best Result card includes its header inside component */}
             <PromptOutput prompt={prompt} filename={meta?.reason ? "all-candidates.txt" : "prompt.txt"} />
+            {runId && <ActivityLog runId={runId} collapsedByDefault />}
           </div>
         )}
       </div>

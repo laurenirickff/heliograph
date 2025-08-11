@@ -75,12 +75,12 @@ export function ThemeToggle() {
       variant="ghost"
       size="sm"
       onClick={onToggle}
-      title={theme === "dark" ? "Use light mode" : "Use dark mode"}
-      aria-label={theme === "dark" ? "Use light mode" : "Use dark mode"}
+      title={theme === "dark" ? "unleash the sun" : "the sun is too bright"}
+      aria-label={theme === "dark" ? "unleash the sun" : "the sun is too bright"}
       aria-pressed={theme === "dark"}
-      className="relative rounded-full border border-input/60 bg-background/40 shadow-xs backdrop-blur supports-[backdrop-filter]:bg-background/20 hover:shadow-sm hover:border-accent/50 focus-visible:ring-accent/40"
+      className="relative mt-1 rounded-full border border-input/60 bg-background/40 shadow-xs backdrop-blur supports-[backdrop-filter]:bg-background/20 hover:shadow-sm hover:border-accent/50 focus-visible:ring-accent/40"
    >
-      <span>{theme === "dark" ? "Use light mode" : "Use dark mode"}</span>
+      <span>{theme === "dark" ? "unleash the sun" : "the sun is too bright"}</span>
     </Button>
   );
 }

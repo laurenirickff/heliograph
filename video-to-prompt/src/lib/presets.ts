@@ -28,7 +28,9 @@ export const TEMPLATE_INFO: Record<PromptPresetKey, { label: string; description
 };
 
 export const BROWSER_USE_PRESET = `
-You will watch a workflow video and produce a concise, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. The result will be embedded inside a larger agent prompt, so keep it self-contained and focused on the workflow shown.
+You will watch a workflow video recorded for a specific customer/project and produce a concise, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. The result will be embedded inside a larger agent prompt, so keep it self-contained and focused on the workflow shown.
+
+Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references. Prefer wording like "search the customer's name" instead of a specific name, unless the literal value is clearly required to complete the workflow.
 
 Output format: Markdown only.
 - Use '###' headings exactly: "### Goal", "### Steps", "### Stop conditions", "### Error handling".
@@ -49,6 +51,7 @@ Guidance for each step:
 
 Data or credentials:
 - If a required input is missing (e.g., login details), include a step that halts and states exactly what is needed.
+ - When referring to customer data, use generalized placeholders unless the exact literal is essential.
 
 Example shape:
 
@@ -75,7 +78,9 @@ If any step fails or an error appears, stop and report the step number and the e
 `;
 
 export const BROWSER_USE_SHADOW_PRESET = `
-You will watch a workflow video where someone cleanly demonstrates the workflow end-to-end (possibly narrating). Produce a concise, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. Focus on what was actually demonstrated; avoid inventing steps.
+You will watch a workflow video, recorded for a specific customer/project, where someone cleanly demonstrates the workflow end-to-end (possibly narrating). Produce a concise, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. Focus on what was actually demonstrated; avoid inventing steps.
+
+Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references unless the literal value is clearly required.
 
 Output format: Markdown only.
 - Use '###' headings exactly: "### Goal", "### Steps", "### Stop conditions", "### Error handling".
@@ -96,6 +101,7 @@ Guidance for each step:
 
 Data or credentials:
 - If required inputs are missing, include a step that halts and states exactly what is needed.
+ - When referring to customer data, use generalized placeholders unless the exact literal is essential.
 
 ### Goal
 <one sentence summary of the workflow’s end-state>
@@ -113,7 +119,9 @@ On errors, report the step and exact on-screen message; retry simple recoveries 
 `;
 
 export const BROWSER_USE_DISCOVERY_PRESET = `
-You will watch a discovery-style video (e.g., interviews, messy narration, multiple speakers). Extract a clear, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. Expect contradictions, incomplete details, and multiple branching paths; reconcile them into a primary flow with explicit decision points and fallbacks.
+You will watch a discovery-style video (e.g., interviews, messy narration, multiple speakers) recorded for a specific customer/project. Extract a clear, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. Expect contradictions, incomplete details, and multiple branching paths; reconcile them into a primary flow with explicit decision points and fallbacks.
+
+Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references unless the literal value is necessary to reach the shown outcome.
 
 Output format: Markdown only.
 - Use '###' headings exactly: "### Goal", "### Steps", "### Stop conditions", "### Error handling".
@@ -133,6 +141,7 @@ Guidance for each step:
 
 Data or credentials:
 - If critical inputs are missing or conflicting, pause and request human input via MCP, listing the exact fields you need.
+ - When referring to customer data, use generalized placeholders unless the exact literal is essential.
 
 ### Goal
 <concise description of the desired end-state, including any constraints mentioned>
@@ -150,7 +159,9 @@ If any step fails or contradictory states are detected, report the step and mess
 `;
 
 export const AIRTOP_PRESET = `
-You will watch a workflow video and produce precise, deterministic, click-by-click instructions suitable for automation or human operators. Assume the workflow is stable and unambiguous; prefer explicit targets and outcomes over general guidance.
+You will watch a workflow video recorded for a specific customer/project and produce precise, deterministic, click-by-click instructions suitable for automation or human operators. Assume the workflow is stable and unambiguous; prefer explicit targets and outcomes over general guidance.
+
+Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references, unless the literal value is clearly necessary to perform the demonstrated step.
 
 Output requirements:
 - For each step, write a compact block with fields, separated by a line containing only --- between steps.
@@ -167,6 +178,7 @@ Style:
 - Plain text only. No JSON, no code fences, no headings.
 - Be specific and consistent. Use exact labels/text shown on screen, include strong visual cues, and prefer reliable selectors when available.
 - Include necessary waits for transitions with realistic timeouts.
+  - When citing data values, prefer placeholders for customer-specific details unless the exact literal is essential to the step.
 `;
 
 export function getPresetText(key: PromptPresetKey): string {
