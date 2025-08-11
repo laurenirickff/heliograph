@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { EXTRACTION_PROMPT_FLEX, EXTRACTION_PROMPT_STRICT } from "@/lib/prompts";
+import { EXTRACTION_PROMPT_FLEX } from "@/lib/prompts";
 
 type NormalizeMode = "strict" | "lenient" | "none";
 type TemplateType = "browser-use" | "airtop";
@@ -124,15 +124,12 @@ export function AdvancedControls({ template, normalize, onChange }: Props) {
             >
               Preset: Concise
             </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setOptions({
-                ...options,
-                verbosity: "detailed",
-                includeWaits: true,
-                addErrorHandlingFooter: true,
-              })}
-            >
+            <Button variant="secondary" onClick={() => setOptions({
+              ...options,
+              verbosity: "detailed",
+              includeWaits: true,
+              addErrorHandlingFooter: true,
+            })}>
               Preset: QA-heavy
             </Button>
             {normalize === "none" && (
@@ -154,7 +151,7 @@ export function AdvancedControls({ template, normalize, onChange }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Guided options (extraction)
-            <span className="ml-2 text-xs text-muted-foreground">These influence the model's extraction directly.</span>
+            <span className="ml-2 text-xs text-muted-foreground">These influence the model&apos;s extraction directly.</span>
           </Label>
           <div className="flex items-center gap-2">
             <input type="checkbox" checked={options.includeSelectors} onChange={(e) => setOptions({ ...options, includeSelectors: e.target.checked })} />

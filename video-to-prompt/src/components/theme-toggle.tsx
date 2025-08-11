@@ -33,14 +33,54 @@ export function ThemeToggle() {
   }, []);
 
   const onToggle = () => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
+
+    // Add a temporary class to synchronize global CSS transitions
+    const root = document.documentElement;
+    if (!prefersReduced) {
+      // Configure overlap-based timing and temporarily freeze background gradients
+      if (next === "dark") {
+        // Light -> Dark: wait for first contact (~240ms), then darken over ~260ms
+        const delay = 240;
+        const duration = 260;
+        root.style.setProperty("--theme-delay", `${delay}ms`);
+        root.style.setProperty("--theme-duration", `${duration}ms`);
+        root.classList.add("theme-animating", "theme-to-dark");
+        // Release gradient freeze at delay, end animating after delay+duration
+        window.setTimeout(() => root.classList.remove("theme-to-dark"), delay);
+        window.setTimeout(() => root.classList.remove("theme-animating"), delay + duration + 60);
+      } else {
+        // Dark -> Light: sun reappears quickly (~140ms), lighten over ~250ms
+        const delay = 140;
+        const duration = 250;
+        root.style.setProperty("--theme-delay", `${delay}ms`);
+        root.style.setProperty("--theme-duration", `${duration}ms`);
+        root.classList.add("theme-animating", "theme-to-light");
+        window.setTimeout(() => root.classList.remove("theme-to-light"), delay);
+        window.setTimeout(() => root.classList.remove("theme-animating"), delay + duration + 60);
+      }
+    }
+
     applyTheme(next);
   };
 
   return (
-    <Button variant="secondary" size="sm" onClick={onToggle} title="Toggle theme">
-      {theme === "dark" ? "Light" : "Dark"}
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onToggle}
+      title={theme === "dark" ? "unleash the sun" : "the sun is too bright"}
+      aria-label={theme === "dark" ? "unleash the sun" : "the sun is too bright"}
+      aria-pressed={theme === "dark"}
+      className={`relative mt-1.5 rounded-full border border-input/60 bg-background/40 shadow-xs backdrop-blur supports-[backdrop-filter]:bg-background/20 hover:shadow-sm hover:border-accent/50 focus-visible:ring-accent/40 ${theme === "light" ? "text-[#B8831F]/90 hover:text-[#B8831F]" : ""}`}
+   >
+      <span>{theme === "dark" ? "unleash the sun" : "the sun is too bright"}</span>
     </Button>
   );
 }
