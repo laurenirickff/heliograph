@@ -1,8 +1,68 @@
 # Heliograph
 
-Heliograph turns narrated workflow videos into ready‑to‑use prompts using a simple, preset‑driven flow.
+Heliograph turns narrated workflow videos into ready‑to‑use prompts.
 
-This repository contains the main web app in the `video-to-prompt/` directory.
+It extracts the intent from a short screen recording, then uses a multi‑agent pipeline to propose several candidate prompts and select the best one via ranked‑choice (IRV) voting. The web app lives in `video-to-prompt/`.
+
+## What it does (as a user)
+
+- Upload a short workflow video (MP4/MOV/WebM, ≤500MB)
+- Pick a prompt preset (e.g., Browser‑Use MCP) and optionally edit the text shown in the editor
+- Optionally adjust Advanced settings:
+  - Generators (N): how many independent candidates to produce
+  - Deciders (K): how many judges evaluate and rank acceptable candidates
+  - Models for generators and deciders
+- Click Generate. You will see:
+  - Activity stream as the pipeline runs (upload → generators → deciders → aggregation)
+  - A summary of decider rankings and average ranks
+  - The Best Result (copy/download), plus download buttons for the prompt+result and for all candidates
+
+## How it works (multi‑tier agents)
+
+1) Generators (N)
+   - Each generator receives the same uploaded video and the same preset text you edited.
+   - They produce N freeform candidate outputs in parallel.
+
+2) Deciders (K)
+   - Each decider independently evaluates the candidate set against the original “ASK” (your edited preset text).
+   - A decider returns a strict ranking of only the candidates it deems acceptable. Unacceptable candidates are not ranked.
+
+3) IRV aggregation and acceptability
+   - We compute acceptability counts (how many deciders ranked each candidate at all).
+   - Candidates that reach an acceptability threshold (≥2 deciders) are eligible for Instant‑Runoff Voting.
+   - IRV proceeds round‑by‑round until a strict majority is reached; ties are broken deterministically by lowest index when needed.
+   - If no candidate is acceptable or no consensus emerges, the app falls back to returning all candidates concatenated so you can review and choose.
+
+4) Observability and downloads
+   - A server‑sent event (SSE) activity log streams the pipeline’s progress with generator/decider names and vote snapshots.
+   - The UI exposes downloads for the best result, the best result with the ASK, and a complete “all results and prompt” bundle including average rankings.
+
+## Prompt presets (editable)
+
+- Browser‑Use MCP: Goal‑oriented, robust steps suitable for Browser‑Use agents with MCP hand‑offs
+- Browser‑Use MCP — Shadowing: Extract the demonstrated end‑to‑end flow from a clean demo
+- Browser‑Use MCP — Discovery: Reconcile messy narration/interviews into a primary flow with explicit decision points
+- Deterministic UI Steps (AirTop): Click‑by‑click deterministic instructions for stable workflows with strong visual cues
+
+These presets are just text. The exact content you see in the editor is what is sent to the model.
+
+## API surface
+
+- POST `/api/analyze` (multipart/form-data)
+  - Fields: `video` (File), `preset`, `promptText`, `generators`, `deciders`, `generatorModel`, `deciderModel`, `temperature`, `maxOutputTokens`, `runId`
+  - Behavior:
+    - If no advanced fields provided, runs a single‑shot generation.
+    - Otherwise runs the N‑generator / K‑decider pipeline with IRV aggregation and returns:
+      - `prompt` (best or concatenated fallback), `meta`, `candidates`, `generatorNames`, `averageRankings`
+- GET `/api/logs/[runId]/stream` (SSE): live activity events for the UI’s activity panel
+- POST `/api/logs/[runId]/emit` (dev‑only): emit a test event in development
+- GET `/api/healthcheck`: returns 200 OK
+
+## Limits and requirements
+
+- Video formats: MP4, MOV, WebM
+- Max size: 500MB
+- Google Gemini Files API is used; you must provide `GEMINI_API_KEY`.
 
 ## Quickstart
 
@@ -78,35 +138,8 @@ Open a second terminal for the stream while emitting to observe events.
 
 ## Notes
 
-- Supports MP4, MOV, WebM up to 500MB
-- Two prompt presets: Browser‑Use MCP and AirTop (fully editable)
-- Copy to clipboard and Download as .txt
-- Uses Gemini 2.5 Flash via Files API (requires `GEMINI_API_KEY`)
-
-## Usage
-
-1) Select a prompt preset (Browser‑Use MCP or AirTop)
-2) Edit the preset text as you like (this is the exact text sent to the model)
-3) Upload a video (MP4/MOV/WebM, ≤500MB)
-4) Receive the generated prompt text and copy or download it
-
-## Goals
-
-- Build a simple, elegant tool that turns workflow videos into strong, ready‑to‑use prompts across multiple AI tools.
-- Provide curated presets that work out‑of‑the‑box, while keeping full prompt editability.
-- Keep the request clear and auditable: what you see in the editor is exactly what is sent.
-
-## What Users Get
-
-- Tool‑ready outputs via curated presets (no deterministic formatter pipeline).
-- A single editable prompt that controls everything, with minimal UI friction.
-- The ability to fully override the preset when needed.
-
-## Guiding Principles
-
-- Influence the cause, not the symptom: strong presets and prompt copy guide outcomes.
-- Simple first: minimal controls, maximal clarity.
-- Robustness: always return a useful prompt and surface any errors clearly.
+- Copy to clipboard and download as .txt for both the best result and the full bundle
+- Dark/light theme toggle and responsive layout for quick review
 
 ---
 
