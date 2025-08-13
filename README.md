@@ -113,6 +113,33 @@ npm run dev
 - If port 3000 is busy, Next.js will start on the next available port (e.g., 3001). Use the printed URL.
 - You can also set a specific port: `PORT=3001 npm run dev`.
 
+### Resilient dev server (background + PID)
+
+To reduce accidental dev server termination during assistant sessions, run it in the background and track the PID:
+
+```bash
+# From repo root
+cd video-to-prompt
+nohup npm run dev > dev.log 2>&1 & echo $! > dev.pid
+
+# Check if still running
+ps -p "$(cat dev.pid)" | cat
+
+# Tail logs
+tail -n 50 -f dev.log | cat
+
+# Stop later
+kill "$(cat dev.pid)" || true; rm -f dev.pid
+```
+
+If the server stops responding, do a clean restart:
+
+```bash
+cd video-to-prompt
+(lsof -ti tcp:3000 || true) | xargs -r kill -9; pkill -f "next dev" || true; pkill -f "/node .*next" || true
+nohup npm run dev > dev.log 2>&1 & echo $! > dev.pid
+```
+
 ### Activity log SSE (dev diagnostics)
 
 Stream events for a given `runId`:

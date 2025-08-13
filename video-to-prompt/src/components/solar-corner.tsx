@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { animate } from "motion";
 import { createPortal } from "react-dom";
 
 /**
@@ -20,9 +21,68 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
   const animTimerRef = useRef<number | null>(null);
   const orbitRef = useRef<SVGGElement | null>(null);
   const orbitEndHandlerRef = useRef<((e: TransitionEvent) => void) | null>(null);
+  const rimShimmerRef = useRef<SVGCircleElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Initialize ring shimmer via Motion One (keeps eclipse/orbit logic untouched)
+  useEffect(() => {
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+    if (!rimShimmerRef.current) return;
+
+    const getVar = (name: string, fallback: string) => {
+      try {
+        const el = cornerRef.current ?? document.documentElement;
+        const v = getComputedStyle(el).getPropertyValue(name).trim();
+        return v || fallback;
+      } catch { return fallback; }
+    };
+    const parseSeconds = (s: string) => {
+      const m = /([0-9]*\.?[0-9]+)/.exec(s);
+      return m ? parseFloat(m[1]) : 8;
+    };
+
+    const speedSec = parseSeconds(getVar("--solar-rim-speed", "24s"));
+    const breatheSec = parseSeconds(getVar("--solar-rim-breathe", "5.5s"));
+    const shimmerMin = parseFloat(getVar("--solar-rim-shimmer-min", "0.14"));
+    const shimmerMax = parseFloat(getVar("--solar-rim-shimmer-max", "0.34"));
+    const arcFracDiam = parseFloat(getVar("--solar-rim-arc-diam-frac", "0.65"));
+
+    // Use the actual circumference so dashoffset wraps seamlessly
+    const r = parseFloat(rimShimmerRef.current.getAttribute("r") || "60");
+    const circumference = Math.PI * 2 * r;
+
+    // Compute arc length from desired fraction of diameter.
+    // Diameter = 2 * r, circumference = 2πr => arc fraction of circumference = (fracDiam * 2r) / (2πr) = fracDiam / π
+    const arcFractionOfCirc = Math.max(0.05, Math.min(0.95, arcFracDiam / Math.PI));
+    const arcLength = circumference * arcFractionOfCirc;
+    const gapLength = Math.max(20, circumference - arcLength);
+
+    // Set dash pattern precisely for smooth taper with round caps
+    try {
+      rimShimmerRef.current.setAttribute("stroke-dasharray", `${arcLength} ${gapLength}`);
+      rimShimmerRef.current.setAttribute("stroke-linecap", "round");
+      rimShimmerRef.current.setAttribute("stroke-width", "1.3");
+    } catch {}
+
+    const sweeper = animate(
+      rimShimmerRef.current as Element,
+      ({ strokeDashoffset: [0, -circumference] } as unknown) as any,
+      ({ duration: speedSec, easing: "linear", repeat: Infinity } as unknown) as any
+    );
+    const breath = animate(
+      rimShimmerRef.current as Element,
+      ({ strokeOpacity: [shimmerMin, shimmerMax, shimmerMin] } as unknown) as any,
+      ({ duration: breatheSec, easing: "ease-in-out", repeat: Infinity } as unknown) as any
+    );
+
+    return () => { sweeper.cancel(); breath.cancel(); };
   }, []);
 
   useEffect(() => {
@@ -187,6 +247,14 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
             <stop offset="0%" stopColor="#FFE5A8" />
             <stop offset="100%" stopColor="#E9B949" />
           </radialGradient>
+          {/* Gentle glow to soften the shimmering rim */}
+          <filter id="rimGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="0.9" result="b" />
+            <feMerge>
+              <feMergeNode in="b" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
           {/* Moon uses a constant umbra tone (matches dark gradient's lightest tone) */}
           {/* Removed bright moving fill; moon remains dark/opaque at all times */}
           {/* Soft shadow to simulate penumbra — merge with SourceGraphic so the moon stays fully opaque */}
@@ -206,6 +274,13 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
           <circle className="sun-glow" cx="120" cy="120" r="95" fill="url(#sunGlow)" />
           {/* Slightly larger than moon to yield a subtle rim */}
           <circle className="sun-core" cx="120" cy="120" r="57" fill="url(#sunCore)" />
+          {/* Shimmering rim precisely on the solar limb */}
+          <g className="sun-rim" aria-hidden>
+            {/* Base rim hugs the sun-core perimeter to feel connected */}
+            <circle className="rim-base" cx="120" cy="120" r="57" />
+            {/* Sweeping highlight that gently travels around the limb */}
+            <circle ref={rimShimmerRef} className="rim-shimmer" cx="120" cy="120" r="57" />
+          </g>
         </g>
         {/* Layer 2: Moon occluder moves along a circular orbit to cover the sun */}
         <g className="moon-group" aria-hidden>
@@ -240,6 +315,14 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
           --start-x: 169.71px; /* top-right point on orbit */
           --start-y: 0px;
           --dur: 2s;
+          /* Rim tuning */
+          --solar-rim-speed: 14s; /* slower, smoother sweep */
+          --solar-rim-breathe: 3.2s; /* gentler cadence */
+          --solar-rim-base-opacity: 0.12; /* keep base faint */
+          --solar-rim-shimmer-min: 0.28; /* subtle shimmer */
+          --solar-rim-shimmer-max: 0.48;
+          /* fraction of sun DIAMETER that the highlight covers (0-1) */
+          --solar-rim-arc-diam-frac: 0.65;
         }
         .solar-corner.variant-corner { position: absolute; top: -60px; left: -60px; transform: scale(0.85); }
         /* Inline variant: scale so the sun core diameter equals var(--logo-circle-d)
@@ -264,6 +347,12 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
           inset: 0;
           pointer-events: none;
           z-index: 0; /* above body/html background but below content wrapper */
+          /* Ripple tuning */
+          --solar-ripple-speed: 22s; /* slow, barely perceptible */
+          --solar-ripple-opacity-weak: 0.05;
+          --solar-ripple-opacity-strong: 0.06;
+          --solar-ripple-opacity-end: 0.03;
+          --solar-ripple-size-max: 120%;
           background-image:
             radial-gradient(
               farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
@@ -283,6 +372,9 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
           background-attachment: fixed;
         }
         :global(.dark) .solar-backdrop {
+          --solar-ripple-opacity-weak: 0.06;
+          --solar-ripple-opacity-strong: 0.08;
+          --solar-ripple-opacity-end: 0.04;
           background-image:
             radial-gradient(
               farthest-corner circle at var(--solar-anchor-x) var(--solar-anchor-y),
@@ -305,6 +397,34 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
         .sun-glow { display: none; }
         .moon-group { display: none; }
         .dark-active .moon-group { display: block; }
+        /* Sun shimmering rim */
+        .sun-rim { transform-origin: 120px 120px; transform-box: fill-box; will-change: transform, opacity; }
+        .rim-base { fill: none; stroke: #E9B949; stroke-opacity: var(--solar-rim-base-opacity, 0.26); stroke-width: 1.6; filter: url(#rimGlow); }
+        :global(.dark) .solar-corner { --solar-rim-base-opacity: 0.14; --solar-rim-shimmer-min: 0.32; --solar-rim-shimmer-max: 0.56; }
+        :global(.dark) .rim-base { stroke: #F1C453; }
+        .rim-shimmer {
+          fill: none;
+          stroke: #F1C453;
+          /* thinner, premium with tapered ends via round caps */
+          stroke-width: 1.3;
+          stroke-linecap: round;
+          /* JS sets exact dasharray based on circumference; keep a close default */
+          stroke-dasharray: 74 284;
+          stroke-dashoffset: 0;
+          filter: url(#rimGlow);
+          animation: rim-breathe var(--solar-rim-breathe, 5.5s) ease-in-out infinite, rim-sweep var(--solar-rim-speed, 24s) linear infinite;
+        }
+        .rim-micro {
+          display: none;
+        }
+        :global(.dark) .rim-micro { display: none; }
+        @keyframes rim-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rim-breathe {
+          0%, 100% { stroke-opacity: var(--solar-rim-shimmer-min, 0.14); }
+          50% { stroke-opacity: var(--solar-rim-shimmer-max, 0.34); }
+        }
+        @keyframes rim-sweep { to { stroke-dashoffset: -1000; } }
+        
         /* Smooth circular motion: rotate the orbit group around (0,0) */
         .moon-orbit {
           transform-origin: 0px 0px;
@@ -327,6 +447,50 @@ export function SolarCorner({ variant = "corner" }: { variant?: "corner" | "inli
         }
         .moon::after { opacity: 0.8; }
         /* During exit, keep showing the moon; it hides only after the orbit completes. */
+
+        /* Background ripple gently emanating from the sun, extremely subtle */
+        .solar-backdrop::after {
+          content: "";
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 0;
+          background-repeat: no-repeat;
+          background-attachment: fixed;
+          /* a ripple ring whose radius grows, using gradient-size animation */
+          background-image: radial-gradient(
+            circle at var(--solar-anchor-x) var(--solar-anchor-y),
+            rgba(184, 131, 31, 0.12) 0%,
+            rgba(184, 131, 31, 0.08) 5%,
+            rgba(184, 131, 31, 0.04) 9%,
+            rgba(184, 131, 31, 0.00) 11%
+          );
+          background-size: 0% 0%;
+          mix-blend-mode: soft-light;
+          animation: solar-ripple var(--solar-ripple-speed, 10s) ease-in-out infinite;
+        }
+        :global(.dark) .solar-backdrop::after {
+          background-image: radial-gradient(
+            circle at var(--solar-anchor-x) var(--solar-anchor-y),
+            rgba(241, 196, 83, 0.14) 0%,
+            rgba(241, 196, 83, 0.10) 5%,
+            rgba(241, 196, 83, 0.05) 9%,
+            rgba(241, 196, 83, 0.00) 12%
+          );
+        }
+        @keyframes solar-ripple {
+          0%   { background-size: 0% 0%; opacity: 0.0; }
+          12%  { background-size: 20% 20%; opacity: var(--solar-ripple-opacity-weak, 0.05); }
+          52%  { background-size: 70% 70%; opacity: var(--solar-ripple-opacity-strong, 0.06); }
+          100% { background-size: var(--solar-ripple-size-max, 120%) var(--solar-ripple-size-max, 120%); opacity: var(--solar-ripple-opacity-end, 0.03); }
+        }
+
+        /* Respect reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+          .sun-rim { animation: none; }
+          .rim-shimmer { animation: none; }
+          .solar-backdrop::after { animation: none; opacity: 0; }
+        }
       `}</style>
     </div>
   );

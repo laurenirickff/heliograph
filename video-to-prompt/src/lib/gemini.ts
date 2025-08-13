@@ -662,9 +662,43 @@ function agentNameFrom(list: readonly string[], index: number): string {
 function buildAgentNames(list: readonly string[], count: number, rotateOffset: number): string[] {
   const n = Math.max(0, Math.floor(count));
   if (n === 0) return [];
-  const base = Array.from({ length: n }, (_, i) => agentNameFrom(list, i));
-  const off = ((rotateOffset % n) + n) % n;
-  return base.map((_, i) => base[(off + i) % n]);
+  const L = list.length;
+  if (L === 0) return [];
+  // Start at a rotated index within the full list, not just within the requested count,
+  // so we sample different name windows across runs. Since n <= L in our UI,
+  // take names modulo L to avoid introducing cycle suffixes unnecessarily.
+  const off = ((rotateOffset % L) + L) % L;
+  return Array.from({ length: n }, (_, i) => list[(off + i) % L]);
+}
+
+// Deterministic offset helper so names are stable within a run but vary across runs
+function hashStringToInt(input: string): number {
+  let hash = 5381;
+  for (let i = 0; i < input.length; i++) {
+    // djb2 with xor for better distribution in TS number range
+    hash = (hash * 33) ^ input.charCodeAt(i);
+  }
+  return hash >>> 0; // unsigned 32-bit
+}
+
+function offsetFromRunId(runId: string | undefined, modulo: number, salt: string): number {
+  if (!modulo || modulo <= 0) return 0;
+  if (runId && runId.length > 0) {
+    const base = hashStringToInt(`${salt}:${runId}`);
+    return Math.abs(base) % modulo;
+  }
+  // Use strong randomness when no runId is provided to avoid repeated picks within the same second
+  try {
+    const g: any = (globalThis as unknown) as { crypto?: { getRandomValues?: (arr: Uint32Array) => void } };
+    if (g?.crypto?.getRandomValues) {
+      const buf = new Uint32Array(1);
+      g.crypto.getRandomValues(buf);
+      return buf[0] % modulo;
+    }
+  } catch {
+    // ignore and fall back to Math.random
+  }
+  return Math.floor(Math.random() * modulo);
 }
 
 export async function uploadVideoAndResolveUri(
@@ -781,7 +815,7 @@ export async function runGenerators(
   const N = Math.max(1, Math.min(Number(options?.generators ?? 5), 10));
   const { fileUri, mimeType } = await uploadVideoAndResolveUri(file);
   console.info("runGenerators: starting", { N, model: options?.model || "gemini-2.5-flash" });
-  const generatorNames = buildAgentNames(G_NAMES, N, Math.floor(Date.now() / 1000) % N);
+  const generatorNames = buildAgentNames(G_NAMES, N, offsetFromRunId(options?.runId, G_NAMES.length, "gen"));
   appendLog(options?.runId, "generators", "start", "Starting generators", { N, model: options?.model || "gemini-2.5-flash", generators: generatorNames });
   const tasks = Array.from({ length: N }).map((_, index) =>
     generateFreeformWithUploadedVideo(fileUri, mimeType, promptText, options)
@@ -822,7 +856,7 @@ export async function evaluateOnce(
   // Shuffle presentation order but keep canonical indices in brackets so no remap needed
   const shuffled = [...candidates].sort(() => Math.random() - 0.5);
   const prompt = buildEvaluatorPrompt(originalPrompt, shuffled.map((c) => ({ index: c.index, text: c.text })));
-  const model = options?.model || "gemini-2.5-flash";
+  const model = options?.model || "gemini-1.5-pro";
   const response = await withRetry(
     () => getAI().models.generateContent({ model, contents: createUserContent([prompt]) }),
     2,
@@ -871,9 +905,9 @@ export async function runEvaluators(
   options?: { evaluators?: number; model?: string; runId?: string },
 ): Promise<EvaluatorVote[]> {
   const K = Math.max(1, Math.min(Number(options?.evaluators ?? 3), 7));
-  console.info("runEvaluators: starting", { K, model: options?.model || "gemini-2.5-flash" });
-  const evaluatorNames = buildAgentNames(E_NAMES, K, (Math.floor(Date.now() / 1000) + 7) % K);
-  appendLog(options?.runId, "evaluators", "start", "Starting evaluators", { K, model: options?.model || "gemini-2.5-flash", evaluators: evaluatorNames });
+  console.info("runEvaluators: starting", { K, model: options?.model || "gemini-1.5-pro" });
+  const evaluatorNames = buildAgentNames(E_NAMES, K, offsetFromRunId(options?.runId, E_NAMES.length, "eval"));
+  appendLog(options?.runId, "evaluators", "start", "Starting evaluators", { K, model: options?.model || "gemini-1.5-pro", evaluators: evaluatorNames });
   const tasks = Array.from({ length: K }).map((_, j) =>
     evaluateOnce(originalPrompt, candidates, { model: options?.model })
       .then((vote) => {
@@ -1005,7 +1039,7 @@ export async function analyzeWithIRV(
     model: opts?.generatorModel || "gemini-2.5-flash",
     runId: opts?.runId,
   });
-  const votes = await runEvaluators(originalPrompt, gens, { evaluators: opts?.evaluators, model: opts?.evaluatorModel || "gemini-2.5-flash", runId: opts?.runId });
+  const votes = await runEvaluators(originalPrompt, gens, { evaluators: opts?.evaluators, model: opts?.evaluatorModel || "gemini-1.5-pro", runId: opts?.runId });
   const evaluatorRankingSnapshots = votes.map((v) => v.ranking);
   appendLog(opts?.runId, "aggregation", "snapshots", "Collected evaluator rankings", { evaluatorRankingSnapshots });
   const agg = aggregateIRV(gens, votes);
@@ -1025,10 +1059,10 @@ export async function analyzeWithIRV(
     let averageRankings: { index: number; name: string; avg: number | null; votes: number }[] = [];
     try {
       const N = gens.length;
-      generatorNames = Array.from({ length: N }).map((_, i) => agentNameFrom(G_NAMES, i));
-      // Build evaluator name list from count of snapshots
+      generatorNames = buildAgentNames(G_NAMES, N, offsetFromRunId(opts?.runId, G_NAMES.length, "gen"));
+      // Build evaluator name list from count of snapshots using same per-run offset
       const K = evaluatorRankingSnapshots.length;
-      const evaluatorNames = Array.from({ length: K }).map((_, j) => agentNameFrom(E_NAMES, j));
+      const evaluatorNames = buildAgentNames(E_NAMES, K, offsetFromRunId(opts?.runId, E_NAMES.length, "eval"));
       const evaluatorSummaries = evaluatorRankingSnapshots.map((ranking, j) => {
         const name = evaluatorNames[j];
         const ordered = ranking.map((idx) => generatorNames[idx]);
@@ -1101,7 +1135,7 @@ export async function analyzeWithIRV(
   let averageRankings: { index: number; name: string; avg: number | null; votes: number }[] = [];
   try {
     const N = gens.length;
-    generatorNames = Array.from({ length: N }).map((_, i) => agentNameFrom(G_NAMES, i));
+    generatorNames = buildAgentNames(G_NAMES, N, offsetFromRunId(opts?.runId, G_NAMES.length, "gen"));
     const sumRanks: number[] = Array.from({ length: N }, () => 0);
     const countRanks: number[] = Array.from({ length: N }, () => 0);
     for (const r of evaluatorRankingSnapshots) {

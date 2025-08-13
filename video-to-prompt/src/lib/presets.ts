@@ -31,6 +31,12 @@ export const BROWSER_USE_PRESET = `
 You will watch a workflow video recorded for a specific customer/project and produce a concise, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. The result will be embedded inside a larger agent prompt, so keep it self-contained and focused on the workflow shown.
 
 Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references. Prefer wording like "search the customer's name" instead of a specific name, unless the literal value is clearly required to complete the workflow.
+Placeholder convention: Use angle-bracketed tokens for variable data, e.g., <customer_name>, <customer_email>, <company_domain>, <account_id>, <resource_name>, <date>. Do not invent specific values.
+UI text vs data values: Quote exact UI labels and button text; for user-entered or content values, use placeholders unless verbatim values are essential to the demonstrated step.
+Demo literals: If the demo shows example content (e.g., a person named "Bob Test"), write instructions using placeholders (e.g., <customer_name>) rather than that literal. Only mention the example as an observation cue if it helps recognition, not as the value to use.
+Context-specific literals (beyond customer info): Generalize any instance- or environment-specific values, such as project IDs, ticket numbers, case numbers, run IDs, file names/paths, repository names, hostnames, environment/base URLs, account numbers, invoice numbers, dates/timestamps, and email subjects, unless the literal is clearly stable and necessary.
+On-screen values: When a value should be taken from the UI, instruct to use the value "as shown" and where to find it (e.g., "search for the project ID as shown on the details panel header") rather than hard-coding the example (e.g., avoid "search project ID 12345").
+Missing or off-screen values: If a required value is not visible or provided, add a step to request it via MCP, naming the exact field(s) needed.
 
 Output format: Markdown only.
 - Use '###' headings exactly: "### Goal", "### Steps", "### Stop conditions", "### Error handling".
@@ -81,6 +87,12 @@ export const BROWSER_USE_SHADOW_PRESET = `
 You will watch a workflow video, recorded for a specific customer/project, where someone cleanly demonstrates the workflow end-to-end (possibly narrating). Produce a concise, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. Focus on what was actually demonstrated; avoid inventing steps.
 
 Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references unless the literal value is clearly required.
+Placeholder convention: Use angle-bracketed tokens for variable data, e.g., <customer_name>, <customer_email>, <company_domain>, <account_id>, <resource_name>, <date>. Do not invent specific values.
+UI text vs data values: Quote exact UI labels and button text; for user-entered or content values, use placeholders unless verbatim values are essential to the demonstrated step.
+Demo literals: If the demo shows example content (e.g., a name like "Bob Test"), generalize to placeholders (e.g., <customer_name>) and avoid hard-coding demo-specific values in actions.
+Context-specific literals (beyond customer info): Generalize any instance- or environment-specific values, such as project IDs, ticket numbers, case numbers, run IDs, file names/paths, repository names, hostnames, environment/base URLs, account numbers, invoice numbers, dates/timestamps, and email subjects, unless the literal is clearly stable and necessary.
+On-screen values: When the demonstrated step uses a value visible in the UI, instruct to use the value "as shown" and specify where to read it from (e.g., sidebar, header, table row) instead of hard-coding the example.
+Missing or off-screen values: If a needed value isn't visible, include an MCP clarification step naming the exact field to request.
 
 Output format: Markdown only.
 - Use '###' headings exactly: "### Goal", "### Steps", "### Stop conditions", "### Error handling".
@@ -122,6 +134,12 @@ export const BROWSER_USE_DISCOVERY_PRESET = `
 You will watch a discovery-style video (e.g., interviews, messy narration, multiple speakers) recorded for a specific customer/project. Extract a clear, goal-oriented sub-prompt fragment for an agent that uses a Browser-Use tool and can request human help via MCP. Expect contradictions, incomplete details, and multiple branching paths; reconcile them into a primary flow with explicit decision points and fallbacks.
 
 Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references unless the literal value is necessary to reach the shown outcome.
+Placeholder convention: Use angle-bracketed tokens for variable data, e.g., <customer_name>, <customer_email>, <company_domain>, <account_id>, <resource_name>, <date>. Do not invent specific values.
+UI text vs data values: Quote exact UI labels and button text; for user-entered or content values, use placeholders unless verbatim values are essential to the demonstrated step.
+Demo literals: If demo content shows specific entities (e.g., "Bob Test"), generalize into placeholders. If ambiguity remains about which value to use, include an MCP clarification step specifying what field/value is needed.
+Context-specific literals (beyond customer info): Generalize any instance- or environment-specific values, such as project IDs, ticket numbers, case numbers, run IDs, file names/paths, repository names, hostnames, environment/base URLs, account numbers, invoice numbers, dates/timestamps, and email subjects, unless the literal is clearly stable and necessary.
+On-screen values: Prefer instructions that reference values "as shown" and where to observe them (e.g., table cell, details pane) rather than hard-coded examples.
+Missing or conflicting values: If values are missing or contradictory, pause and request specifics via MCP, listing the exact fields.
 
 Output format: Markdown only.
 - Use '###' headings exactly: "### Goal", "### Steps", "### Stop conditions", "### Error handling".
@@ -162,6 +180,11 @@ export const AIRTOP_PRESET = `
 You will watch a workflow video recorded for a specific customer/project and produce precise, deterministic, click-by-click instructions suitable for automation or human operators. Assume the workflow is stable and unambiguous; prefer explicit targets and outcomes over general guidance.
 
 Generalization policy: Replace customer-specific identifiers (e.g., names, emails, domains, company names, account IDs) with neutral placeholders or role-based references, unless the literal value is clearly necessary to perform the demonstrated step.
+Placeholder convention: Use angle-bracketed tokens for variable data, e.g., <customer_name>, <customer_email>, <company_domain>, <account_id>, <resource_name>, <date>. Do not invent specific values.
+UI text vs data values: Quote exact UI labels and button text; for text inputs, options, and URLs, prefer placeholders unless the literal is essential and stable. Do not hard-code demo example values into the actions.
+Context-specific literals (beyond customer info): Generalize any instance- or environment-specific values, such as project IDs, ticket numbers, run IDs, file names/paths, repository names, hostnames, environment/base URLs, account numbers, invoice numbers, dates/timestamps, and email subjects, unless clearly stable and necessary.
+On-screen values: When the step uses a value visible in the UI, set the instruction to use the value "as shown" and indicate where to read it, rather than hard-coding the example literal.
+Missing values: If a required value isn't shown, add a line to request it (e.g., via MCP) naming the field.
 
 Output requirements:
 - For each step, write a compact block with fields, separated by a line containing only --- between steps.

@@ -8,6 +8,8 @@ import { PromptOutput } from "@/components/prompt-output";
 import { TemplateSelector } from "@/components/template-selector";
 import { ControlsSimple } from "@/components/controls-simple";
 import { getPresetText } from "@/lib/presets";
+import { estimatePipelineCost, formatUSD } from "@/lib/pricing";
+import { EVALUATOR_PROMPT } from "@/lib/prompts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -36,10 +38,11 @@ export default function Home() {
   const [meta, setMeta] = useState<Meta>(null);
   const [promptText, setPromptText] = useState<string>(getPresetText(template));
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [videoDurationSec, setVideoDurationSec] = useState<number | null>(null);
   const [generators, setGenerators] = useState<number>(5);
   const [evaluators, setEvaluators] = useState<number>(3);
   const [generatorModel, setGeneratorModel] = useState<string>("gemini-2.5-flash");
-  const [evaluatorModel, setEvaluatorModel] = useState<string>("gemini-2.5-flash");
+  const [evaluatorModel, setEvaluatorModel] = useState<string>("gemini-1.5-pro");
   // Keep the inline SolarCorner a fixed, stable size so typography changes
   // don't alter the icon dimensions or alignment.
   useEffect(() => {
@@ -57,6 +60,29 @@ export default function Home() {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // Derive video duration locally when a file is selected so estimator can use it
+  useEffect(() => {
+    if (!selectedFile) {
+      setVideoDurationSec(null);
+      return;
+    }
+    let revoked = false;
+    const url = URL.createObjectURL(selectedFile);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.src = url;
+    const onLoaded = () => {
+      if (!isNaN(video.duration)) setVideoDurationSec(video.duration);
+      if (!revoked) URL.revokeObjectURL(url);
+      revoked = true;
+    };
+    video.addEventListener("loadedmetadata", onLoaded);
+    return () => {
+      video.removeEventListener("loadedmetadata", onLoaded);
+      if (!revoked) URL.revokeObjectURL(url);
+    };
+  }, [selectedFile]);
 
   const handleUpload = async (file: File) => {
     setState("uploading");
@@ -207,6 +233,8 @@ export default function Home() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="gemini-2.5-flash" subtitle="Video-capable, fast">gemini-2.5-flash</SelectItem>
+                  <SelectItem value="gemini-2.5-flash-lite" subtitle="Lowest latency, cost‑efficient">gemini-2.5-flash-lite</SelectItem>
+                  <SelectItem value="gemini-2.5-pro" subtitle="Higher reasoning">gemini-2.5-pro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -218,11 +246,63 @@ export default function Home() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="gemini-2.5-flash" subtitle="Fast">gemini-2.5-flash</SelectItem>
+                  <SelectItem value="gemini-2.5-flash-lite" subtitle="Lowest latency, cost‑efficient">gemini-2.5-flash-lite</SelectItem>
+                  <SelectItem value="gemini-2.5-pro" subtitle="Higher reasoning">gemini-2.5-pro</SelectItem>
                   <SelectItem value="gemini-1.5-pro" subtitle="Higher reasoning, text-only">gemini-1.5-pro</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+          {/* Pricing estimate (appears once a video is selected) */}
+          {selectedFile && videoDurationSec && videoDurationSec > 0 && (
+            <div className="mt-4 border-t pt-4">
+              {(() => {
+                const estimate = estimatePipelineCost({
+                  videoDurationSec,
+                  generators,
+                  evaluators,
+                  generatorModel,
+                  evaluatorModel,
+                  promptText,
+                  evaluatorPromptBaseChars: EVALUATOR_PROMPT.length,
+                });
+                if (!estimate) return null;
+                const mins = (videoDurationSec / 60);
+                return (
+                  <div className="text-sm">
+                    <div className="flex items-baseline justify-between">
+                      <div className="font-medium">Estimated cost</div>
+                      <div className="text-base font-semibold">{formatUSD(estimate.totalUSD)}</div>
+                    </div>
+                    <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="rounded border p-3">
+                        <div className="font-medium mb-1">Generators ({generators} × {generatorModel})</div>
+                        <div className="text-muted-foreground">
+                          <div>Video: {mins.toFixed(1)} min × {generatorModel} rate → {formatUSD(estimate.details.generator.perCall.videoUSD)}</div>
+                          <div>Input: ~{estimate.details.tokens.promptTokens} tok → {formatUSD(estimate.details.generator.perCall.inUSD)}</div>
+                          <div>Output: ~{estimate.details.tokens.avgGeneratorOutTokens} tok → {formatUSD(estimate.details.generator.perCall.outUSD)}</div>
+                          <div className="mt-1">Per call: {formatUSD(estimate.details.generator.perCall.totalUSD)}</div>
+                          <div>Total: {formatUSD(estimate.details.generator.totalUSD)}</div>
+                        </div>
+                      </div>
+                      <div className="rounded border p-3">
+                        <div className="font-medium mb-1">Evaluators ({evaluators} × {evaluatorModel})</div>
+                        <div className="text-muted-foreground">
+                          <div>Input per call: ~{estimate.details.tokens.evaluatorInTokensPerCall} tok → {formatUSD(estimate.details.evaluator.perCall.inUSD)}</div>
+                          <div>Output per call: ~{estimate.details.tokens.evaluatorOutTokensPerCall} tok → {formatUSD(estimate.details.evaluator.perCall.outUSD)}</div>
+                          <div className="mt-1">Per call: {formatUSD(estimate.details.evaluator.perCall.totalUSD)}</div>
+                          <div>Total: {formatUSD(estimate.details.evaluator.totalUSD)}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Ballpark only. Based on video length and prompt size; actual model usage may vary.
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </Card>
       )}
 

@@ -4,7 +4,10 @@
 export const EXTRACTION_PROMPT_STRICT = `
 Extract browser automation steps from this workflow video using BOTH visual cues and narration.
 
-Context: The recording comes from a specific customer/project. Generalize any customer-specific identifiers (names, emails, domains, company names, account IDs) into neutral placeholders or role-based references. Prefer phrasing like "search the customer's name" instead of "search Stan Smith" unless the exact literal value is clearly required to complete the workflow.
+Context: The recording comes from a specific customer/project. Generalize context-specific identifiers and values into neutral placeholders or role-based references unless the literal value is clearly required to complete the workflow. This includes not only customer details, but also project IDs, ticket/case numbers, run IDs, repository names, file names/paths, hostnames, environment/base URLs, account/invoice numbers, dates/timestamps, and email subjects.
+Placeholder convention: Use angle-bracketed tokens for variable data (e.g., <customer_name>, <customer_email>, <company_domain>, <account_id>, <project_id>, <ticket_number>, <resource_name>, <date>) instead of hard-coded example values seen in the video. Do not invent specific values.
+UI text vs data values: Quote exact UI labels and button text; for user-entered or content values, use placeholders unless verbatim values are essential and explicitly required by the step.
+On-screen values: When a value should be taken from the UI, instruct to use the value "as shown" and specify where to read it (e.g., "use the project ID as shown in the header of the details panel") rather than copying the example literal (e.g., avoid "project ID 12345").
 
 You MUST output a pure JSON array (no surrounding prose) where each item matches this schema exactly:
 {
@@ -27,13 +30,16 @@ Strict requirements:
 - Use the exact key names above (narrationContext, waitCondition). Do NOT use synonyms like "context", "note", or "waitFor".
 - Omit unknown fields entirely rather than using null or empty strings.
 - Prefer specific, concise target.description labels (e.g., "Take Action button").
-- Generalize customer-specific values in fields like value, narrationContext, and businessLogic to placeholders (e.g., "the customer's email") unless a literal value is explicitly necessary.
+ - Generalize context-specific values in fields like value, narrationContext, and businessLogic to placeholders (e.g., <project_id>, <account_id>, <customer_email>) unless a literal value is explicitly necessary. When a value should be read from the UI, indicate "as shown" and where to read it.
 `;
 
 export const EXTRACTION_PROMPT_FLEX = `
 Extract browser automation steps from this workflow video using BOTH visual cues and narration.
 
-Context: The recording comes from a specific customer/project. Generalize any customer-specific identifiers (names, emails, domains, company names, account IDs) into neutral placeholders or role-based references. Prefer phrasing like "search the customer's name" instead of "search Stan Smith" unless the exact literal value is clearly required to complete the workflow.
+Context: The recording comes from a specific customer/project. Generalize any context-specific identifiers and values (customer details, project IDs, ticket/case numbers, run IDs, repository names, file names/paths, hostnames, environment/base URLs, account/invoice numbers, dates/timestamps, email subjects) into neutral placeholders or role-based references unless the literal value is clearly required.
+Placeholder convention: Use angle-bracketed tokens for variable data (e.g., <customer_name>, <customer_email>, <company_domain>, <account_id>, <project_id>, <ticket_number>, <resource_name>, <date>) instead of hard-coded example values. Do not invent specific values.
+UI text vs data values: Quote exact UI labels and button text; for user-entered or content values, use placeholders unless verbatim values are essential and explicitly required by the step.
+On-screen values: When a value is visible in the UI, specify to use the value "as shown" and where to read it, rather than hard-coding the example value.
 
 You MUST output a pure JSON array (no surrounding prose). Be permissive in capturing nuance and ambiguity. For each step, include keys that help downstream tools reason well. Recommended keys (optional, not exhaustive):
 {
@@ -62,7 +68,7 @@ You MUST output a pure JSON array (no surrounding prose). Be permissive in captu
 Guidance:
 - Keep outputs concise but informative. Use camelCase keys. Avoid nulls/empty strings; omit unknowns instead.
 - Ensure the top-level is a JSON array only; do not include markdown or commentary outside the JSON.
-- When including example text or values, generalize customer-specific details to placeholders (e.g., "customer account ID") unless the literal value is essential to achieve the demonstrated outcome.
+ - When including example text or values, generalize any context-specific details to placeholders (e.g., <project_id>, <account_id>, <customer_email>) unless the literal value is essential to achieve the demonstrated outcome. Prefer instructions that reference values "as shown" and the location to read them from.
 `;
 
 // --------------------
